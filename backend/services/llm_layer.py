@@ -1,0 +1,180 @@
+"""
+IP-SAKTI — LLM Layer
+----------------------
+Multi-provider LLM abstraction with automatic fallback chain:
+  Primary:  Groq (LLaMA 4 / Mixtral — fast, free tier)
+  Fallback: Google Gemini
+  Local:    Ollama (offline / air-gapped environments)
+
+Usage:
+    from services.llm_layer import get_llm, chat, SYSTEM_PROMPT_AYUSH
+
+    llm = get_llm()
+    response = await chat(llm, system=SYSTEM_PROMPT_AYUSH, user="Can I patent Ashwagandha?")
+"""
+from __future__ import annotations
+import os
+import logging
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Shared AYUSH IPR System Prompt — injected into every agent call
+# ---------------------------------------------------------------------------
+SYSTEM_PROMPT_AYUSH = """You are IP-SAKTI Sahayak, an authoritative AI assistant for Intellectual Property Rights (IPR) and biodiversity law specific to AYUSH (Ayurveda, Yoga, Unani, Siddha, Homeopathy) products.
+
+CORE RULES:
+1. ALWAYS cite the exact statute, rule number, treaty article, or pharmacopoeial entry you rely on.
+2. ALWAYS include a confidence indicator (HIGH / MEDIUM / LOW) per answer.
+3. ALWAYS state: "This is information, not legal advice. Consult a registered Patent Agent or AYUSH IP Facilitator for official filings."
+4. NEVER fabricate statutory provisions, case citations, or registry records.
+5. If uncertain or out-of-scope, ABSTAIN and say so explicitly.
+6. Keep INDIA and INTERNATIONAL answers VISIBLY SEPARATE when jurisdiction is relevant.
+7. Respond in the language specified by the user (default: English).
+
+LEGAL CORPUS YOU OPERATE ON:
+- Patents Act 1970 (Amended 2024) — Sections 3(p), 3(d), 3(j), disclosure requirements
+- Biological Diversity Act 2002 (Amended 2023) + BD Rules 2024 — NBA Section 6 pre-approval
+- Trade Marks Act 1999, Geographical Indications Act 1999, Designs Act 2000, Copyright Act 1957
+- Protection of Plant Varieties and Farmers' Rights Act 2001
+- Drugs and Cosmetics Act 1940 + Rules; Schedule T; First Schedule
+- FSSAI Ayurveda Aahar Regulations 2022
+- Drugs and Magic Remedies (Objectionable Advertisements) Act 1954
+- Ayurvedic Pharmacopoeia of India (API), Siddha Pharmacopoeia, Unani Pharmacopoeia
+- Traditional Knowledge Digital Library (TKDL) corpus
+- WIPO GRATK Treaty 2024, TRIPS Agreement, Nagoya Protocol, CBD
+- PCT, Madrid System, Hague System, Budapest Treaty
+- EMA THMPD Guidelines, WHO Monographs on Selected Medicinal Plants
+- Digital Personal Data Protection Act 2023 (DPDP) — for privacy guardrails
+"""
+
+# ---------------------------------------------------------------------------
+# Provider Loader
+# ---------------------------------------------------------------------------
+
+def get_llm(provider: Optional[str] = None):
+    """
+    Returns an LLM client. Tries providers in order: groq → gemini → ollama.
+    Raises RuntimeError if no provider is configured.
+    """
+    provider = provider or os.getenv("LLM_PROVIDER", "groq")
+
+    if provider == "groq":
+        return _load_groq()
+    if provider == "gemini":
+        return _load_gemini()
+    if provider == "ollama":
+        return _load_ollama()
+
+    raise RuntimeError(f"Unknown LLM_PROVIDER '{provider}'. Set to: groq | gemini | ollama")
+
+
+def get_llm_with_fallback():
+    """Tries Groq first, falls back to Gemini, then Ollama."""
+    for provider in ["groq", "gemini", "ollama"]:
+        try:
+            llm = get_llm(provider)
+            logger.info("LLM loaded via provider: %s", provider)
+            return llm
+        except Exception as e:
+            logger.warning("Provider '%s' failed: %s — trying next.", provider, e)
+    raise RuntimeError("All LLM providers failed. Check API keys in .env")
+
+
+# ---------------------------------------------------------------------------
+# Provider Implementations
+# ---------------------------------------------------------------------------
+
+def _load_groq():
+    try:
+        from langchain_groq import ChatGroq
+    except ImportError:
+        raise ImportError("Run: pip install langchain-groq")
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not set in .env")
+
+    return ChatGroq(
+        api_key=api_key,
+        model_name=os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"),
+        temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
+        max_tokens=int(os.getenv("AGENT_MAX_TOKENS", "2048")),
+    )
+
+
+def _load_gemini():
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+    except ImportError:
+        raise ImportError("Run: pip install langchain-google-genai")
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not set in .env")
+
+    return ChatGoogleGenerativeAI(
+        google_api_key=api_key,
+        model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
+    )
+
+
+def _load_ollama():
+    try:
+        from langchain_community.chat_models import ChatOllama
+    except ImportError:
+        raise ImportError("Run: pip install langchain-community")
+
+    return ChatOllama(
+        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        model=os.getenv("OLLAMA_MODEL", "llama3.1:8b"),
+        temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Unified Chat Helper
+# ---------------------------------------------------------------------------
+
+async def chat(llm, system: str, user: str, context: str = "") -> str:
+    """
+    Sends a system + optional context + user message to the LLM.
+    Returns the text response. Falls back to error string on failure.
+    """
+    try:
+        from langchain_core.messages import SystemMessage, HumanMessage
+        messages = [SystemMessage(content=system)]
+        if context:
+            messages.append(HumanMessage(content=f"[Context]\n{context}"))
+        messages.append(HumanMessage(content=user))
+        response = await llm.ainvoke(messages)
+        return response.content
+    except Exception as e:
+        logger.error("LLM chat failed: %s", e)
+        return f"[LLM unavailable: {e}]"
+
+
+# ---------------------------------------------------------------------------
+# Guardrail: Out-of-scope detection
+# ---------------------------------------------------------------------------
+
+OUT_OF_SCOPE_SIGNALS = [
+    "cricket", "stock market", "recipe", "relationship", "weather",
+    "movie", "politics", "election", "sports", "celebrity",
+]
+
+def is_out_of_scope(query: str) -> bool:
+    """Returns True if query is clearly unrelated to AYUSH IPR."""
+    q = query.lower()
+    return any(sig in q for sig in OUT_OF_SCOPE_SIGNALS) and not any(
+        kw in q for kw in ["patent", "ayush", "herb", "formulation", "trademark", "ip", "biodiversity"]
+    )
+
+ABSTAIN_RESPONSE = (
+    "This query appears to be outside the scope of AYUSH Intellectual Property Rights and biodiversity law. "
+    "IP-SAKTI Sahayak is designed specifically to answer questions about patents, trademarks, GI, ABS duties, "
+    "TKDL prior-art, and regulatory classification for Ayurvedic, Siddha, Unani, Yoga, and Homeopathy products. "
+    "Please rephrase your query within this domain."
+)

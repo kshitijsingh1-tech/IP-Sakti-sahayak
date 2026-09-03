@@ -1,0 +1,79 @@
+# =============================================================================
+# IP-SAKTI — Git Ignore Configuration
+# =============================================================================
+
+# Environment & Secrets (NEVER COMMIT SECRETS)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!.env.example
+!backend/.env.example
+*.pem
+*.key
+*.cert
+
+# Node.js / Vite Frontend
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.output/
+package-lock.json.log
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.eslintcache
+
+# Python / FastAPI Backend
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local Vector DB & Data Storage (re-generated via ingest script)
+data/
+backend/data/
+chroma_db/
+backend/chroma_db/
+statutes/
+backend/statutes/
+uploads/
+backend/uploads/
+tmp/
+backend/tmp/
+logs/
+backend/logs/
+*.sqlite
+*.db
+
+# Operating System & IDE
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
