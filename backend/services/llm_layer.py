@@ -87,21 +87,74 @@ def get_llm_with_fallback():
 # ---------------------------------------------------------------------------
 
 def _load_groq():
-    try:
-        from langchain_groq import ChatGroq
-    except ImportError:
-        raise ImportError("Run: pip install langchain-groq")
-
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY not set in .env")
 
-    return ChatGroq(
-        api_key=api_key,
-        model_name=os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"),
-        temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
-        max_tokens=int(os.getenv("AGENT_MAX_TOKENS", "2048")),
-    )
+    model = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
+
+    try:
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            api_key=api_key,
+            model_name=model,
+            temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
+            max_tokens=int(os.getenv("AGENT_MAX_TOKENS", "2048")),
+        )
+    except Exception as e:
+        logger.info("langchain-groq not installed or failed (%s), using DirectGroqLLM via httpx", e)
+        return DirectGroqLLM(api_key=api_key, model=model)
+
+
+class DirectGroqLLM:
+    """Lightweight direct REST client for Groq API."""
+    def __init__(self, api_key: str, model: str):
+        self.api_key = api_key
+        self.model = model
+
+    async def ainvoke(self, messages):
+        import httpx
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        payload_messages = []
+        for msg in messages:
+            role = "system" if getattr(msg, "type", "") == "system" or getattr(msg, "role", "") == "system" else "user"
+            content = getattr(msg, "content", str(msg))
+            payload_messages.append({"role": role, "content": content})
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for attempt in range(3):
+                try:
+                    resp = await client.post(
+                        url,
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                            "User-Agent": "IP-SAKTI/1.0"
+                        },
+                        json={
+                            "model": self.model,
+                            "messages": payload_messages,
+                            "max_tokens": 1500,
+                            "temperature": 0.1
+                        }
+                    )
+                    if resp.status_code == 429 and attempt < 2:
+                        logger.warning("Groq rate limit 429 hit. Retrying in 1.5s (attempt %d)...", attempt + 1)
+                        await asyncio.sleep(1.5)
+                        continue
+                    resp.raise_for_status()
+                    data = resp.json()
+                    content = data["choices"][0]["message"]["content"]
+
+                    class LLMResponse:
+                        def __init__(self, text):
+                            self.content = text
+                    return LLMResponse(content)
+                except httpx.HTTPStatusError as err:
+                    if err.response.status_code == 429 and attempt < 2:
+                        await asyncio.sleep(1.5)
+                        continue
+                    raise err
 
 
 def _load_gemini():
@@ -141,14 +194,27 @@ def _load_ollama():
 async def chat(llm, system: str, user: str, context: str = "") -> str:
     """
     Sends a system + optional context + user message to the LLM.
-    Returns the text response. Falls back to error string on failure.
+    Returns the text response. Works with both LangChain and Direct REST LLM objects.
     """
     try:
-        from langchain_core.messages import SystemMessage, HumanMessage
-        messages = [SystemMessage(content=system)]
-        if context:
-            messages.append(HumanMessage(content=f"[Context]\n{context}"))
-        messages.append(HumanMessage(content=user))
+        try:
+            from langchain_core.messages import SystemMessage, HumanMessage
+            messages = [SystemMessage(content=system)]
+            if context:
+                messages.append(HumanMessage(content=f"[Context]\n{context}"))
+            messages.append(HumanMessage(content=user))
+        except ImportError:
+            class SimpleMsg:
+                def __init__(self, role, content):
+                    self.role = role
+                    self.content = content
+                    self.type = role
+
+            messages = [SimpleMsg("system", system)]
+            if context:
+                messages.append(SimpleMsg("user", f"[Context]\n{context}"))
+            messages.append(SimpleMsg("user", user))
+
         response = await llm.ainvoke(messages)
         return response.content
     except Exception as e:
