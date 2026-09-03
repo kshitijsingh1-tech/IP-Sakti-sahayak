@@ -5,7 +5,7 @@ import { analyzeQuery } from '../services/aiEngine';
 import { AgentPipeline } from './AgentPipeline';
 import { EvidenceGraph } from './EvidenceGraph';
 import { AntigravityLogo } from './AntigravityLogo';
-import { FileUploadButton, type UploadedFile } from './FileUploadButton';
+import { FileUploadTrigger, FileChipsList, type UploadedFile } from './FileUploadButton';
 import { 
   Send, BookOpen, UserCheck, RefreshCw, Plus, Search, 
   PanelLeftClose, PanelLeftOpen, ShieldCheck, 
@@ -516,30 +516,25 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
           )}
         </div>
 
-        {/* Bottom Input Bar — rounded-3xl to accommodate file chips above */}
+        {/* Bottom Input Bar — rounded-3xl with 100% full-width input */}
         <div className="absolute bottom-4 left-4 right-4 max-w-3xl mx-auto z-30">
           <div className="bg-white rounded-3xl border border-slate-300 shadow-2xl google-shimmer-border overflow-hidden">
-            {/* File chips row */}
+            {/* File chips row above input */}
             {attachedFiles.length > 0 && (
-              <div className="px-4 pt-3 pb-0">
-                <FileUploadButton
+              <div className="px-4 pt-3 pb-1 border-b border-slate-100 bg-slate-50/60">
+                <FileChipsList
                   files={attachedFiles}
-                  onFilesChange={setAttachedFiles}
-                  compact
+                  onRemove={(id) => setAttachedFiles(prev => prev.filter(f => f.id !== id))}
                 />
               </div>
             )}
 
             {/* Input row */}
-            <div className="flex items-center gap-2 p-2 pl-4 pr-3">
-              {/* Upload trigger */}
-              {attachedFiles.length === 0 && (
-                <FileUploadButton
-                  files={attachedFiles}
-                  onFilesChange={setAttachedFiles}
-                  compact
-                />
-              )}
+            <div className="flex items-center gap-2.5 p-2.5 pl-4 pr-2.5 min-h-[54px]">
+              {/* Paperclip Trigger */}
+              <FileUploadTrigger
+                onFilesSelect={(newFiles) => setAttachedFiles(prev => [...prev, ...newFiles])}
+              />
 
               <input
                 type="text"
@@ -552,13 +547,13 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   }
                 }}
                 placeholder={attachedFiles.length > 0 ? 'Add context or submit attached files...' : 'Ask IP-SAKTI Sahayak or describe formulation for instant audit...'}
-                className="flex-1 bg-transparent text-slate-950 text-xs sm:text-sm font-medium focus:outline-none placeholder:text-slate-400"
+                className="flex-1 min-w-0 bg-transparent text-slate-950 text-xs sm:text-sm font-medium focus:outline-none placeholder:text-slate-400 py-1.5"
               />
 
               <button
                 onClick={() => handleQuerySubmit(inputQuery)}
                 disabled={isLoading || (!inputQuery.trim() && attachedFiles.length === 0)}
-                className="bg-slate-950 hover:bg-slate-800 p-2.5 rounded-full text-white disabled:opacity-30 transition-all shrink-0 shadow-md"
+                className="bg-slate-950 hover:bg-slate-800 p-2.5 rounded-full text-white disabled:opacity-30 transition-all shrink-0 shadow-md cursor-pointer"
               >
                 {isLoading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
               </button>

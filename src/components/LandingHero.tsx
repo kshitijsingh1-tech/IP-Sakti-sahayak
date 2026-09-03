@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AntigravityLogo } from './AntigravityLogo';
 import { Layers, BookOpen, Network, ShieldCheck, ArrowRight, Cpu, ChevronRight, Activity, Search, Sparkles, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { SAMPLE_QUERIES } from '../data/mockData';
-import { FileUploadButton, type UploadedFile } from './FileUploadButton';
+import { FileUploadTrigger, FileChipsList, type UploadedFile } from './FileUploadButton';
 
 interface LandingHeroProps {
   onStartQuery: (queryText: string) => void;
@@ -22,6 +22,14 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
       : heroInput.trim();
     onStartQuery(queryWithFiles);
     onNavigateTab('assistant');
+  };
+
+  const handleFilesSelect = (newFiles: UploadedFile[]) => {
+    setHeroFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const handleFileRemove = (id: string) => {
+    setHeroFiles(prev => prev.filter(f => f.id !== id));
   };
 
   return (
@@ -46,37 +54,33 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
           Traditional formulations are being patented abroad while Indian innovators remain unprotected. IP-SAKTI Sahayak runs a 4-agent autonomous audit — grounding every claim in the Patents Act 1970/2024, Biological Diversity Act 2023, TKDL corpora, and WIPO GRATK 2024 — in seconds.
         </p>
 
-        {/* Intelligently Filling Hero Space: Perfectly Aligned Search Capsule */}
-        <div className="pt-2 max-w-3xl mx-auto space-y-4">
+        {/* Perfectly Aligned Search Capsule with 100% Full-Width Input */}
+        <div className="pt-2 max-w-3xl mx-auto">
           <form
             onSubmit={handleHeroSubmit}
-            className="bg-white rounded-3xl border border-slate-300 shadow-xl google-shimmer-border transition-all focus-within:ring-2 focus-within:ring-slate-950 overflow-hidden"
+            className="bg-white rounded-3xl border border-slate-300 shadow-xl google-shimmer-border transition-all focus-within:ring-2 focus-within:ring-slate-950 overflow-hidden text-left"
           >
-            {/* File chips row — shown when files attached */}
+            {/* File chips row — shown above input when attached */}
             {heroFiles.length > 0 && (
-              <div className="px-4 pt-3">
-                <FileUploadButton files={heroFiles} onFilesChange={setHeroFiles} compact />
+              <div className="px-5 pt-3 pb-1 border-b border-slate-100 bg-slate-50/60">
+                <FileChipsList files={heroFiles} onRemove={handleFileRemove} />
               </div>
             )}
 
             {/* Main input row */}
-            <div className="flex items-center gap-3 p-2 pl-4 pr-2">
-              <div className="text-slate-500 shrink-0">
-                <Search className="w-5 h-5 text-slate-950" />
-              </div>
+            <div className="flex items-center gap-3 p-2.5 pl-5 pr-2.5 min-h-[58px]">
+              <Search className="w-5 h-5 text-slate-400 shrink-0" />
 
               <input
                 type="text"
                 value={heroInput}
                 onChange={(e) => setHeroInput(e.target.value)}
                 placeholder="Describe formulation, or attach a PDF / PPT / image..."
-                className="flex-1 bg-transparent text-slate-950 font-medium text-sm focus:outline-none placeholder:text-slate-400 py-2.5"
+                className="flex-1 min-w-0 bg-transparent text-slate-950 font-medium text-sm sm:text-base focus:outline-none placeholder:text-slate-400 py-1.5"
               />
 
-              {/* Upload trigger (without chips — chips shown above) */}
-              {heroFiles.length === 0 && (
-                <FileUploadButton files={heroFiles} onFilesChange={setHeroFiles} compact />
-              )}
+              {/* Upload trigger button (paperclip) */}
+              <FileUploadTrigger onFilesSelect={handleFilesSelect} />
 
               <button
                 type="submit"
