@@ -1,163 +1,160 @@
-# IP-SAKTI Sahayak 🌿⚖️
+# IP-SAKTI Sahayak
 
-> **Protect your AYUSH Innovation before someone else patents it.**
+> **Autonomous AYUSH Intellectual Property & Biodiversity Audit Engine**  
+> *Protecting AYUSH Innovation and Traditional Knowledge against Global Misappropriation.*
 
-IP-SAKTI Sahayak is an **Autonomous AYUSH IP & Biodiversity Audit Engine** built for SIH Problem Statement **26045**. Traditional Ayurvedic formulations are being patented abroad while Indian MSMEs, practitioners, and researchers remain unprotected. IP-SAKTI changes that — running a **4-agent parallel RAG audit pipeline** in seconds, grounding every legal claim in the Patents Act 1970/2024, Biological Diversity Act 2023, TKDL Sanskrit corpora, and WIPO GRATK 2024.
+IP-SAKTI Sahayak is an autonomous AI system designed for **Smart India Hackathon Problem Statement 26045** (Ministry of Ayush, Government of India). It addresses the systemic challenge where traditional Ayurvedic, Siddha, and Unani formulations face international patent squatting while Indian innovators struggle with complex statutory compliance across patents, biodiversity ABS duties, and drug regulations.
+
+The platform executes a parallel **4-agent RAG audit pipeline** in seconds, grounding every legal recommendation in the Patents Act 1970/2024, Biological Diversity Act 2002/2023, Traditional Knowledge Digital Library (TKDL) corpora, WIPO GRATK 2024 Treaty, and FSSAI Ayurveda-Aahar regulations.
 
 ---
 
-## 🧠 System Architecture
+## System Architecture
 
 ```
-User Formulation Query
-        │
-        ▼
-┌─────────────────────────────────────┐
-│    Frontend (Vite + React + TS)     │
-│  • Chat Workspace (ChatGPT-style)   │
-│  • Audit History Sidebar            │
-│  • 4-Agent Pipeline Status Cards   │
-│  • Evidence Graph Visualiser        │
-└──────────────┬──────────────────────┘
-               │ REST API (FastAPI)
-               ▼
-┌─────────────────────────────────────┐
-│     Backend (FastAPI + Python)      │
-│                                     │
-│  Agent 1: RESEARCHER               │
-│    └─ Statutory + TKDL RAG         │
-│  Agent 2: AUDITOR                  │
-│    └─ Date-versioned compliance     │
-│  Agent 3: DEVILS ADVOCATE          │
-│    └─ IPO examiner stress-test      │
-│  Agent 4: STRATEGIST               │
-│    └─ IP + ABS roadmap synthesis    │
-│                                     │
-│  LLM: Groq (LLaMA 4 / Mixtral)    │
-│  Vector DB: ChromaDB / pgvector    │
-│  Embeddings: SBERT MiniLM          │
-└─────────────────────────────────────┘
+                       User Formulation Query / Uploaded Document
+                                         │
+                                         ▼
+                 ┌───────────────────────────────────────────────┐
+                 │         Frontend (Vite + React + TS)          │
+                 │  - Immersive Full-Screen Chat Workspace       │
+                 │  - Audit History & Session Persistence        │
+                 │  - 4-Agent Real-Time Execution Status        │
+                 │  - Evidence Graph & Topology Visualizer       │
+                 └───────────────────────┬───────────────────────┘
+                                         │ REST API (FastAPI)
+                                         ▼
+                 ┌───────────────────────────────────────────────┐
+                 │          Backend (FastAPI + Python)           │
+                 │                                               │
+                 │  Agent 1: RESEARCHER                          │
+                 │    └─ Statutory & TKDL Multi-Vector RAG       │
+                 │  Agent 2: AUDITOR                             │
+                 │    └─ Date-Versioned Compliance Verification   │
+                 │  Agent 3: DEVIL'S ADVOCATE                    │
+                 │    └─ IPO Examiner Objection Stress-Testing   │
+                 │  Agent 4: STRATEGIST                          │
+                 │    └─ Actionable IP & ABS Roadmap Synthesis   │
+                 │                                               │
+                 │  LLM Engine: Groq (LLaMA 4) / Gemini / Ollama │
+                 │  Vector Store: ChromaDB / pgvector            │
+                 │  Multilingual: Bhashini ULCA / LLM Cascade    │
+                 └───────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Prerequisites
-- **Node.js** ≥ 20 (for frontend)
-- **Python** ≥ 3.11 (for backend)
-- **Groq API Key** — free at [console.groq.com](https://console.groq.com)
+### System Prerequisites
+- **Node.js** >= 20.0
+- **Python** >= 3.11
+- **Groq API Key** (Free tier available at [console.groq.com](https://console.groq.com))
 
 ---
 
-### 1️⃣ Frontend Setup
+### 1. Frontend Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-team/ip-sakti.git
-cd ip-sakti
+# Clone repository
+git clone https://github.com/kshitijsingh1-tech/IP-Sakti-sahayak.git
+cd IP-Sakti-sahayak
 
-# Install dependencies
+# Install Node dependencies
 npm install
 
 # Start Vite development server
 npm run dev
 ```
 
-App runs at → `http://localhost:5173`
+Frontend application will be accessible at: `http://localhost:5173`
 
-> **Build for production:**
-> ```bash
-> npm run build
-> # Outputs to dist/
-> ```
+Production build generation:
+```bash
+npm run build
+```
 
 ---
 
-### 2️⃣ Backend Setup
+### 2. Backend Setup
 
 ```bash
 cd backend/
 
-# Create Python virtual environment
+# Create and activate virtual environment
 python -m venv .venv
-.venv\Scripts\activate      # Windows
-# source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate    # Linux / macOS
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Configure environment variables
+# Copy environment configuration
 cp .env.example .env
-# Edit .env and fill in your API keys (see Configuration section below)
 
-# Start the FastAPI server
+# Run server
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-API runs at → `http://localhost:8000`  
-Swagger docs at → `http://localhost:8000/docs`
+Backend service will be accessible at: `http://localhost:8000`  
+Interactive OpenAPI documentation: `http://localhost:8000/docs`
 
 ---
 
-## ⚙️ Configuration
+### 3. Ingest Statutory Corpus into Vector Database
 
-Copy `backend/.env.example` to `backend/.env` and configure the following critical fields:
+To populate the local ChromaDB vector store with the 17 national and international statutory documents:
 
-| Variable | Required | Description |
+```bash
+python scripts/ingest_corpus.py
+```
+
+---
+
+## Configuration
+
+Copy `backend/.env.example` to `backend/.env` and configure key variables:
+
+| Variable | Requirement | Description |
 |---|---|---|
-| `GROQ_API_KEY` | ✅ Yes | LLM provider key — [get free key](https://console.groq.com) |
-| `GROQ_MODEL` | ✅ Yes | e.g. `meta-llama/llama-4-scout-17b-16e-instruct` |
-| `CHROMA_PERSIST_DIRECTORY` | ✅ Yes | Local path for ChromaDB vector store |
-| `EMBEDDING_MODEL` | ✅ Yes | `sentence-transformers/all-MiniLM-L6-v2` |
-| `CORS_ORIGINS` | ✅ Yes | Frontend origin e.g. `http://localhost:5173` |
-| `POSTGRES_URL` | ⚠️ Production | PostgreSQL + pgvector connection string |
-| `NBA_API_KEY` | ⚠️ Production | National Biodiversity Authority live lookup |
-| `TKDL_ACCESS_TOKEN` | ⚠️ Production | CSIR-NISCPR TKDL API token |
+| `GROQ_API_KEY` | Required | Groq LLaMA 4 inference key |
+| `GROQ_MODEL` | Required | Model designation (e.g. `meta-llama/llama-4-scout-17b-16e-instruct`) |
+| `CHROMA_PERSIST_DIRECTORY` | Required | Local directory path for ChromaDB storage |
+| `EMBEDDING_MODEL` | Required | Embedding model name (`sentence-transformers/all-MiniLM-L6-v2`) |
+| `CORS_ORIGINS` | Required | Allowed CORS origins (`http://localhost:5173`) |
+| `BHASHINI_API_KEY` | Optional | Government of India Bhashini translation key (falls back to LLM) |
+| `TKDL_ACCESS_TOKEN` | Institutional | CSIR-NISCPR TKDL API access token |
+| `NBA_API_KEY` | Institutional | National Biodiversity Authority API key |
 
 ---
 
-## 🔬 How to Use
+## Key Capabilities
 
-### Running an Audit
+### 1. 4-Agent Autonomous Pipeline
+- **Researcher**: Retrieves statutory clauses, pharmacopoeial entries, and classical TKDL matches.
+- **Auditor**: Evaluates compliance under active law versions (e.g., 2024 Patent Rules, 2023 Biodiversity Amendment).
+- **Devil's Advocate**: Simulates Indian Patent Office (IPO) examiner rejection arguments under Sections 3(p) and 3(d).
+- **Strategist**: Synthesizes a risk-mitigated patenting and commercialization roadmap.
 
-1. **Open the app** at `http://localhost:5173`
-2. **Enter a formulation query** in the search bar on the Hero page, e.g.:
-   > *"I have a standardized Ashwagandha + Guduchi extract capsule for stress management. Can I patent it in India and sell it in Germany as an Ayurvedic medicine?"*
-3. Click **"Audit Formulation"** — this triggers the 4-agent pipeline.
-4. You land on the **Chat Workspace** where you can see:
-   - 🔍 **Researcher** — statutory & TKDL evidence retrieved
-   - ⚖️ **Auditor** — legal compliance verified against the active law version
-   - ⚠️ **Devil's Advocate** — IPO examiner objections simulated
-   - 🗺️ **Strategist** — actionable IP + ABS roadmap generated
-5. Scroll down to review **IP Protection Grid**, **Evidence Graph**, and **Statutory Citations**.
-6. Click **"Export Passport PDF"** to download your IP Readiness Passport.
+### 2. Document & Multi-Media Analysis
+Upload formulation specifications, laboratory reports, or patent drafts directly in the query bar. Supported formats include:
+- **Documents**: PDF, DOCX, TXT, CSV
+- **Presentations**: PPT, PPTX
+- **Images**: PNG, JPG, WEBP (supports optical character recognition)
 
-### Switching Jurisdiction
+### 3. Dual Jurisdiction System
+Switch seamlessly between **India** (Patents Act, BD Act, FSSAI) and **International** (WIPO GRATK Treaty, TRIPS, Nagoya Protocol, EMA THMPD) regulatory frameworks. Answers are maintained in distinct datasets to prevent jurisdictional conflation.
 
-Use the **`🇮🇳 IN` / `🌐 Global`** toggle in the top bar to switch between Indian (Patents Act / BD Act) and International (WIPO GRATK / EU THMPD) regulatory regimes.
-
-### Audit History
-
-Your audit sessions are saved in the **collapsible left sidebar** under *Recent Audits*. Click any past audit to reload its full results.
-
-### Pre-Built Validation Scenarios
-
-On the Hero page, scroll to **"Launch Pre-Built Validation Scenarios"** and click any of the 4 sample formulations to test the pipeline end-to-end:
-- Ashwagandha + Guduchi Extract (India → Germany export)
-- Modified Classical Chyawanprash (novel processing)
-- Ayurveda-Aahar Herbal Tea (FSSAI functional food)
-- Standardised Curcumin Phytopharmaceutical (CDSCO pathway)
+### 4. Multilingual Delivery
+Supports 12 Indian languages (**English, Hindi, Sanskrit, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, Marathi, Punjabi, Urdu**) using Bhashini ULCA API with automatic zero-config LLM translation fallback.
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### `POST /api/v1/audit`
+Executes the 4-agent audit pipeline.
 
-Runs the 4-agent autonomous audit pipeline.
-
-**Request Body:**
 ```json
 {
   "query": "Standardized Ashwagandha extract capsule for stress management",
@@ -167,89 +164,79 @@ Runs the 4-agent autonomous audit pipeline.
 }
 ```
 
-**Response:** Full `AuditResponse` object containing:
-- `classification` — Regulatory category (Classical / Proprietary / Phytopharmaceutical / Aahar)
-- `agent_steps` — 4-agent reasoning chain with findings
-- `citations` — Source-cited statutory & pharmacopoeial references
-- `readiness_passport` — Scored IP readiness across 5 dimensions
+### `POST /api/v1/upload`
+Processes uploaded PDF/PPT/Image files and returns structured text context for audit injection.
 
-### `GET /api/v1/tkdl/search?q=<term>&top_k=5`
+### `POST /api/v1/translate`
+Translates audit text into any supported target language via Bhashini/LLM cascade.
 
-Vector similarity search over TKDL classical corpora.
-
-### `GET /api/v1/patent/prior-art?formulation=<name>&jurisdiction=INDIA`
-
-Checks IPO patent vector store for Section 3(p)/3(d) prior-art risk.
-
-### `GET /api/v1/abs/check?botanical_name=<name>`
-
-NBA Biological Diversity Act compliance duty check.
+### `GET /api/v1/corpus/status`
+Returns ChromaDB vector collection health and chunk count.
 
 ### `GET /health`
-
-System health and provider status.
+System health check endpoint.
 
 ---
 
-## 🗂️ Project Structure
+## Repository Structure
 
 ```
 ip-sakti/
-├── src/                          # Vite + React Frontend
+├── src/                            # Frontend (Vite + React + TypeScript)
 │   ├── components/
-│   │   ├── ChatAssistant.tsx    # Full-screen ChatGPT workspace
-│   │   ├── AgentPipeline.tsx    # 4-Agent pipeline status cards
-│   │   ├── LandingHero.tsx      # Hero landing page
-│   │   ├── Header.tsx           # Floating capsule navigation bar
-│   │   ├── EvidenceGraph.tsx    # Statutory evidence topology graph
-│   │   ├── TKDLRadar.tsx        # Traditional Knowledge Radar view
-│   │   ├── ABSChecker.tsx       # Biodiversity ABS duty checker
-│   │   ├── ReadinessPassport.tsx# IP Readiness Passport
-│   │   └── ProductClassifier.tsx# AYUSH product classification wizard
+│   │   ├── ChatAssistant.tsx      # ChatGPT-style workspace
+│   │   ├── FileUploadButton.tsx   # PDF/PPT/Image upload handler & chips
+│   │   ├── AgentPipeline.tsx      # 4-Agent execution status display
+│   │   ├── LandingHero.tsx        # Hero landing page & search capsule
+│   │   ├── EvidenceGraph.tsx      # Statutory evidence topology graph
+│   │   ├── ReadinessPassport.tsx  # IP Readiness Passport score card
+│   │   └── ABSChecker.tsx         # Biodiversity ABS duty verification
 │   ├── services/
-│   │   └── aiEngine.ts          # Mock RAG engine (replace with backend API)
-│   ├── data/
-│   │   └── mockData.ts          # Sample queries & master citations
+│   │   └── aiEngine.ts            # Frontend client engine
 │   └── types/
-│       └── index.ts             # TypeScript types for all data models
+│       └── index.ts               # Core TypeScript definitions
 │
-├── backend/                     # FastAPI Backend
-│   ├── main.py                  # API server with all endpoints
+├── backend/                       # Backend (FastAPI + Python)
+│   ├── main.py                    # Server entry point & API endpoints
+│   ├── scripts/
+│   │   └── ingest_corpus.py       # Corpus ingestion script (17 statutes)
 │   ├── services/
-│   │   └── rag_pipeline.py      # 4-Agent async pipeline orchestrator
-│   ├── requirements.txt         # Python dependencies
-│   └── .env.example             # Environment configuration template
+│   │   ├── document_processor.py  # PDF/PPT/DOCX/CSV/OCR text extractor
+│   │   ├── llm_layer.py           # Multi-provider LLM fallback chain
+│   │   ├── bhashini_client.py     # Bhashini & LLM translation cascade
+│   │   └── rag_pipeline.py        # 4-Agent async pipeline orchestrator
+│   ├── requirements.txt           # Python dependency requirements
+│   └── .env.example               # Environment template
 │
-├── index.html
-├── package.json
-├── vite.config.ts
-└── README.md
+├── README.md
+└── package.json
 ```
 
 ---
 
-## 📚 Legal Corpus Reference
+## Legal Corpus Coverage
 
-| Corpus | Description | Status |
+| Statutory Instrument | Regulatory Focus | Status |
 |---|---|---|
-| Patents Act 1970 (Amended 2024) | Indian patent eligibility, Sec 3(p), 3(d) | ✅ Integrated |
-| Biological Diversity Act 2002 (Amended 2023) | NBA ABS duties, Section 6 | ✅ Integrated |
-| Ayurvedic Pharmacopoeia of India (API) | Classical formula reference | ✅ Integrated |
-| TKDL Sanskrit / Tamil Corpora | Traditional Knowledge Digital Library | ⚠️ API key required |
-| WIPO GRATK 2024 Treaty | International TK disclosure obligations | ✅ Integrated |
-| FSSAI Ayurveda Aahar Regulations 2022 | Functional food pathway | ✅ Integrated |
-| EMA THMPD Guidelines | EU Traditional Herbal Medicinal Products | ✅ Integrated |
+| Patents Act 1970 (Amended 2024) | Patent eligibility, Sections 3(p), 3(d), 3(j) | Integrated |
+| Biological Diversity Act 2002 (Amended 2023) | NBA Section 6 pre-approval & ABS duties | Integrated |
+| Ayurvedic Pharmacopoeia of India (API) | Classical formulation reference standards | Integrated |
+| Traditional Knowledge Digital Library (TKDL) | Prior-art protection against biopiracy | Integrated |
+| WIPO GRATK Treaty 2024 | Mandatory international TK disclosure | Integrated |
+| FSSAI Ayurveda Aahar Regulations 2022 | Functional food & nutraceutical pathway | Integrated |
+| EMA THMPD (European Union) | Herbal product export compliance | Integrated |
+| Digital Personal Data Protection Act 2023 | User data privacy & audit compliance | Integrated |
 
 ---
 
-## ⚠️ Disclaimer
+## Legal Disclaimer
 
-IP-SAKTI Sahayak provides **source-cited legal and regulatory information** grounded in official statutes and traditional knowledge corpora. This information does **not constitute formal legal advice**. Consult a registered Patent Agent or AYUSH IP Facilitator for official filings and prosecutions.
+IP-SAKTI Sahayak provides source-cited legal and regulatory information grounded in official statutory texts and traditional knowledge databases. This system does not provide formal legal advice. Users should consult a qualified Patent Agent or AYUSH IP Facilitator for official filings.
 
 ---
 
-## 🏆 SIH 26045
+## Hackathon Reference
 
-Built by Team IP-SAKTI for **Smart India Hackathon 2024 — Problem Statement 26045**  
-Category: **Intellectual Property Rights & Biodiversity for AYUSH Sector**  
-Ministry: **Ministry of Ayush, Government of India**
+- **Problem Statement**: SIH 26045 (Smart India Hackathon 2024)
+- **Title**: Intellectual Property Rights & Biodiversity Protection for AYUSH Sector
+- **Ministry**: Ministry of Ayush, Government of India
