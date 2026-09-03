@@ -76,7 +76,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
                 value={heroInput}
                 onChange={(e) => setHeroInput(e.target.value)}
                 placeholder="Describe formulation, or attach a PDF / PPT / image..."
-                className="flex-1 min-w-0 bg-transparent text-slate-950 font-medium text-sm sm:text-base focus:outline-none placeholder:text-slate-400 py-1.5"
+                className="flex-1 min-w-0 bg-transparent text-slate-950 font-medium text-sm sm:text-base focus:outline-none placeholder:text-slate-400 py-1.5 relative z-10"
               />
 
               {/* Upload trigger button (paperclip) */}

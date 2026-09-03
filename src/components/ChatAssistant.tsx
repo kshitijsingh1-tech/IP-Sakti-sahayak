@@ -547,7 +547,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   }
                 }}
                 placeholder={attachedFiles.length > 0 ? 'Add context or submit attached files...' : 'Ask IP-SAKTI Sahayak or describe formulation for instant audit...'}
-                className="flex-1 min-w-0 bg-transparent text-slate-950 text-xs sm:text-sm font-medium focus:outline-none placeholder:text-slate-400 py-1.5"
+                className="flex-1 min-w-0 bg-transparent text-slate-950 text-xs sm:text-sm font-medium focus:outline-none placeholder:text-slate-400 py-1.5 relative z-10"
               />
 
               <button

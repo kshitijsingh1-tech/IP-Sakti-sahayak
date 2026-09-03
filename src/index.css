@@ -110,6 +110,7 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: google-gradient-spin 5s ease infinite;
+  pointer-events: none;
 }
 
 /* Antigravity Crisp Light Glass Panels */
