@@ -187,18 +187,24 @@ async def run_4_agent_pipeline(
 
     q_lower = query.lower()
     
-    # 1. Intent Detection: Check if the query is a domain-specific IP/AYUSH query
+    # 1. Intent Detection: Check if query is an informational/conversational question vs a formulation audit
     domain_keywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious"]
     is_domain = any(k in q_lower for k in domain_keywords) or len(query.split()) > 12
 
-    if not is_domain:
-        logger.info("Non-domain conversational query detected. Bypassing 4-Agent Pipeline.")
-        clean_resp = "I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity. How can I assist you with your formulation audit or patent strategy today?"
+    info_questions = ["what is patent", "what is a patent", "what is patents act", "what is tkdl", "what is biodiversity", "what is nba", "how to patent", "is patent free", "who are you", "what is your name", "my name", "hello", "hi", "explain patent"]
+    is_info_question = any(q in q_lower for q in info_questions) or q_lower.startswith("what is") or q_lower.startswith("explain ")
+    
+    formulation_terms = ["extract", "formulation", "capsule", "syrup", "tablet", "powder", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "gummy", "oil", "taila", "ashwagandha", "guduchi", "curcumin", "turmeric", "tulsi", "brahmi", "neem", "composition", "dose", "mg"]
+    is_formulation = any(k in q_lower for k in formulation_terms) or len(query.split()) > 12
+
+    if (is_info_question and not is_formulation) or not is_domain:
+        logger.info("Informational / Conversational query detected. Bypassing 4-Agent Pipeline.")
+        clean_resp = f"I am IP-SAKTI Sahayak, your AI assistant for Ayurvedic IPR & Biodiversity compliance. Guidance regarding '{query}': A Patent is an exclusive right granted for an invention under the Patents Act 1970."
         
         if llm:
-            conv_prompt = f"You are IP-SAKTI Sahayak, an AI assistant for Ayurvedic IPR & Biodiversity compliance. The user said: '{query}'. Provide a concise, intelligent conversational response. If they ask about your identity, explain your purpose briefly. Do NOT provide legal advice. Do NOT use <think> tags."
+            conv_prompt = f"You are IP-SAKTI Sahayak, an AI assistant for Ayurvedic IPR & Biodiversity compliance. The user asked: '{query}'. Provide a concise, highly intelligent, structured guidance response explaining the concept clearly. Do NOT generate synthetic product scores. Do NOT use <think> tags."
             try:
-                response = await chat(llm, system="You are a helpful AI assistant.", user=conv_prompt)
+                response = await chat(llm, system="You are an expert AYUSH IPR legal assistant.", user=conv_prompt)
                 clean_resp = clean_llm_text(response)
             except Exception as e:
                 logger.warning(f"Conversational LLM call failed: {e}")
@@ -210,12 +216,12 @@ async def run_4_agent_pipeline(
             "law_year": law_year,
             "classification": {
                 "category": "CONVERSATIONAL",
-                "title": "Conversational Response",
+                "title": "Knowledge & Guidance Response",
                 "confidence": 100,
                 "description": clean_resp,
-                "regulatory_body": "",
+                "regulatory_body": "Indian Patent Office & Ministry of Ayush",
                 "evidence_requirements": [],
-                "ip_posture": "",
+                "ip_posture": "Statutory Guidance",
                 "abs_posture": ""
             },
             "ip_map": [],

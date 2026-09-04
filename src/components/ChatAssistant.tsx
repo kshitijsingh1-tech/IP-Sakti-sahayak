@@ -112,6 +112,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const [isDockOpen, setIsDockOpen] = useState(false);
   const [isSidebarToolsOpen, setIsSidebarToolsOpen] = useState(true);
   const [expandedMsgIds, setExpandedMsgIds] = useState<Record<string, boolean>>({});
+  const [operationalMode, setOperationalMode] = useState<'CHATBOT' | 'IP_SAKTI'>('CHATBOT');
 
   const toggleInlineExpand = (msgId: string) => {
     setExpandedMsgIds(prev => ({ ...prev, [msgId]: !prev[msgId] }));
@@ -257,10 +258,33 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       const infoResult = checkInformationalQuery(finalQuery);
 
       let verdictStatement = '';
-      if (result.classification?.category === 'CONVERSATIONAL') {
-        verdictStatement = result.classification.description || `I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate patentability, check TKDL prior art, and navigate NBA compliance. How can I assist you today?`;
-      } else if (infoResult.isInformational && infoResult.explanation) {
-        verdictStatement = `STATUTORY EXPLANATION: ${infoResult.topicTitle}\n\n${infoResult.explanation}\n\nStatutory citations and legal sources attached below. Select Pins, Graph, or IP Strategy to explore grounded provisions.`;
+      const isConversationalOrInfo = 
+        operationalMode === 'CHATBOT' || 
+        result.classification?.category === 'CONVERSATIONAL' || 
+        result.classification?.category === 'STATUTORY_INFORMATION' || 
+        infoResult.isInformational;
+
+      if (isConversationalOrInfo) {
+        if (infoResult.isInformational && infoResult.explanation) {
+          verdictStatement = infoResult.explanation;
+        } else if (result.classification?.description) {
+          verdictStatement = result.classification.description;
+        } else {
+          verdictStatement = `I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate Section 3(p)/3(d) patentability, check TKDL prior art, and navigate NBA Form III compliance. How can I assist you with your project today?`;
+        }
+
+        // Force category to CONVERSATIONAL to suppress action tool icons & statutory score pills
+        result.classification = {
+          ...result.classification,
+          category: 'CONVERSATIONAL',
+          title: result.classification?.title || 'Guidance Response',
+          confidence: 100,
+          description: verdictStatement,
+          regulatoryBody: '',
+          evidenceRequirements: [],
+          ipPosture: '',
+          absPosture: ''
+        };
       } else {
         const score = result.readinessPassport?.overallScore || 70;
         const blockers = result.readinessPassport?.criticalBlockers || [
@@ -696,6 +720,34 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Dual Operational Mode Switcher Pill */}
+            <div className="flex items-center p-0.5 rounded-full bg-slate-100 border border-slate-300 text-xs">
+              <button
+                onClick={() => setOperationalMode('CHATBOT')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-[11px] transition-all cursor-pointer ${
+                  operationalMode === 'CHATBOT'
+                    ? 'bg-slate-950 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-950'
+                }`}
+                title="Conversational AI Guidance Mode (Clean answer without audit tools)"
+              >
+                <MessageSquare className="w-3 h-3" />
+                <span>Guide Bot</span>
+              </button>
+              <button
+                onClick={() => setOperationalMode('IP_SAKTI')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-[11px] transition-all cursor-pointer ${
+                  operationalMode === 'IP_SAKTI'
+                    ? 'bg-slate-950 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-950'
+                }`}
+                title="IP-SAKTI 4-Agent Statutory Audit Mode (Full verdict card & analysis tools)"
+              >
+                <ShieldCheck className="w-3 h-3 text-amber-400" />
+                <span>IP-SAKTI Audit</span>
+              </button>
+            </div>
+
             {/* Matte Black / White Dual Jurisdiction Toggle */}
             <div className="flex items-center p-0.5 rounded-full bg-slate-100 border border-slate-300 text-xs">
               <button
@@ -1074,6 +1126,32 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         {/* Bottom Input Bar — rounded-3xl with 100% full-width input */}
         <div className="absolute bottom-4 left-4 right-4 max-w-3xl mx-auto z-30">
           <div className="bg-white rounded-3xl border border-slate-300 shadow-2xl google-shimmer-border overflow-hidden">
+            {/* Operational Mode Active Strip */}
+            <div className="px-4 py-1.5 flex items-center justify-between border-b border-slate-100 bg-slate-50/80 text-[11px] font-medium text-slate-700">
+              <div className="flex items-center gap-1.5 font-bold font-display">
+                {operationalMode === 'CHATBOT' ? (
+                  <>
+                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="text-slate-950 font-black">Guide Bot Mode Active</span>
+                    <span className="text-[10px] text-slate-500 font-semibold hidden sm:inline">— Direct guidance Q&A without audit tool icons</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-slate-950 font-black">IP-SAKTI Audit Mode Active</span>
+                    <span className="text-[10px] text-slate-500 font-semibold hidden sm:inline">— Full 4-Agent Statutory Audit with Pins, Graph, Passport</span>
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOperationalMode(prev => prev === 'CHATBOT' ? 'IP_SAKTI' : 'CHATBOT')}
+                className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-200 hover:bg-slate-950 hover:text-white text-slate-950 transition-all cursor-pointer"
+              >
+                Switch to {operationalMode === 'CHATBOT' ? 'IP-SAKTI Mode' : 'Guide Bot'}
+              </button>
+            </div>
+
             {/* File chips row above input */}
             {attachedFiles.length > 0 && (
               <div className="px-4 pt-3 pb-1 border-b border-slate-100 bg-slate-50/60">
