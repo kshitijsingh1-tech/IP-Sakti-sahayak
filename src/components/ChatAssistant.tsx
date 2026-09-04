@@ -101,8 +101,20 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data && Array.isArray(data.sessions) && data.sessions.length > 0) {
-          setHistoryItems(data.sessions);
-          localStorage.setItem('ipsakti_audit_history', JSON.stringify(data.sessions));
+          const mappedSessions: AuditHistoryItem[] = data.sessions.map((sess: any) => {
+            let resObj = sess.result;
+            if (resObj && resObj.classification && resObj.classification.category) {
+              return { ...sess, result: resObj };
+            }
+            if (resObj && (resObj.query_id || resObj.classification)) {
+              resObj = mapBackendResponseToQueryResult(resObj, sess.query || sess.title || 'AYUSH Audit', jurisdiction, lawYear);
+              return { ...sess, result: resObj };
+            }
+            const fallback = getMockAnalysisForQuery(sess.query || sess.title || 'AYUSH Formulation Audit', jurisdiction);
+            return { ...sess, result: fallback };
+          });
+          setHistoryItems(mappedSessions);
+          localStorage.setItem('ipsakti_audit_history', JSON.stringify(mappedSessions));
         }
       })
       .catch(err => console.log('Backend history fetch skipped:', err.message));
@@ -161,7 +173,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   };
 
   const handleSelectHistoryItem = async (item: AuditHistoryItem) => {
-    setIsSidebarOpen(false); // Auto-collapse history column when item selected
+    // Only auto-collapse history sidebar on mobile screens (< 768px)
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
 
     try {
       // 1. If item.result is already a valid camelCase QueryResult
@@ -171,18 +186,23 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       }
 
       // 2. If item.result is a raw SQLite JSON payload (snake_case query_id / classification)
-      if (item.result && (item.result as any).query_id) {
-        const mapped = mapBackendResponseToQueryResult(item.result as any, item.query || item.title, jurisdiction, lawYear);
+      if (item.result && ((item.result as any).query_id || (item.result as any).classification)) {
+        const mapped = mapBackendResponseToQueryResult(
+          item.result as any,
+          item.query || item.title || 'AYUSH Audit',
+          jurisdiction,
+          lawYear
+        );
         onAnalysisResult(mapped);
         return;
       }
 
       // 3. Fallback: generate mock analysis for item query
-      const mockRes = getMockAnalysisForQuery(item.query || item.title, jurisdiction);
+      const mockRes = getMockAnalysisForQuery(item.query || item.title || 'AYUSH Formulation Audit', jurisdiction);
       onAnalysisResult(mockRes);
     } catch (err) {
       console.error('History item selection error:', err);
-      const fallback = getMockAnalysisForQuery(item.query || item.title, jurisdiction);
+      const fallback = getMockAnalysisForQuery(item.query || item.title || 'AYUSH Formulation Audit', jurisdiction);
       onAnalysisResult(fallback);
     }
   };
