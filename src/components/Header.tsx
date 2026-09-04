@@ -3,6 +3,8 @@ import type { Jurisdiction } from '../types';
 import { AntigravityLogo } from './AntigravityLogo';
 import { Sparkles, Home, Rocket } from 'lucide-react';
 
+import { TRANSLATIONS } from '../data/translations';
+
 interface HeaderProps {
   jurisdiction: Jurisdiction;
   onJurisdictionChange: (j: Jurisdiction) => void;
@@ -22,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS['en'];
 
   return (
     <header className="sticky top-0 z-50 px-2 sm:px-4 pt-3 pb-2 transition-all">
@@ -36,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-lg sm:text-xl font-black font-display tracking-tight text-slate-950 group-hover:text-blue-600 transition-colors">
-              IP-SAKTI <span className="google-shimmer-text">Sahayak</span>
+              {t.appTitle}
             </span>
             <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 text-white font-black">
               SIH 26045
@@ -55,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Home className="w-3.5 h-3.5" />
-            <span>Home</span>
+            <span>{t.home}</span>
           </button>
           
           <button
@@ -67,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>AI Reasoning Workspace</span>
+            <span>{t.assistant}</span>
           </button>
         </div>
 
