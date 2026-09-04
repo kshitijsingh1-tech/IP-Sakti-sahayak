@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { QueryResult, Jurisdiction, AuditHistoryItem, SampleQuery } from '../types';
 import { SAMPLE_QUERIES, getMockAnalysisForQuery } from '../data/mockData';
 import { TRANSLATIONS } from '../data/translations';
-import { analyzeQuery, mapBackendResponseToQueryResult } from '../services/aiEngine';
+import { analyzeQuery, mapBackendResponseToQueryResult, checkInformationalQuery } from '../services/aiEngine';
 import { triggerGoogleTranslate } from '../services/translator';
 import { AgentPipeline } from './AgentPipeline';
 import { EvidenceGraph } from './EvidenceGraph';
@@ -251,28 +251,35 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       const result = await analyzeQuery(finalQuery, jurisdiction, lawYear);
       onAnalysisResult(result);
 
-      const score = result.readinessPassport?.overallScore || 70;
-      const blockers = result.readinessPassport?.criticalBlockers || [
-        'Section 3(d) synergistic bio-activity data required under Patents Act 1970',
-        'NBA Form III pre-approval required under Biological Diversity Act 2023'
-      ];
-      const isPatentReady = score >= 85 && blockers.length === 0;
+      const infoResult = checkInformationalQuery(finalQuery);
 
       let verdictStatement = '';
-      if (isPatentReady) {
-        verdictStatement = `STATUTORY VERDICT: PATENT GRANT READY (Score: ${score}%)\nMeets all statutory criteria under Patents Act 1970 (Sec 3p/3d), BD Act 2023, and AYUSH guidelines.`;
+      if (infoResult.isInformational && infoResult.explanation) {
+        verdictStatement = `STATUTORY EXPLANATION: ${infoResult.topicTitle}\n\n${infoResult.explanation}\n\nStatutory citations and legal sources attached below. Select Pins, Graph, or IP Strategy to explore grounded provisions.`;
       } else {
-        verdictStatement = `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\nYou are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
-          blockers.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
+        const score = result.readinessPassport?.overallScore || 70;
+        const blockers = result.readinessPassport?.criticalBlockers || [
+          'Section 3(d) synergistic bio-activity data required under Patents Act 1970',
+          'NBA Form III pre-approval required under Biological Diversity Act 2023'
+        ];
+        const isPatentReady = score >= 85 && blockers.length === 0;
+
+        if (isPatentReady) {
+          verdictStatement = `STATUTORY VERDICT: PATENT GRANT READY (Score: ${score}%)\nMeets all statutory criteria under Patents Act 1970 (Sec 3p/3d), BD Act 2023, and AYUSH guidelines.`;
+        } else {
+          verdictStatement = `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\nYou are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
+            blockers.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
+        }
+        verdictStatement += `\n\nStatutory 4-agent audit & GraphRAG synthesis complete for: "${finalQuery}". Select any tool button below (Pins, Graph, Passport) to view full legal evidence.`;
       }
 
       // Append Assistant Response Message to continuous stream
       const asstMsg: ChatMessage = {
         id: `asst-${Date.now()}`,
         sender: 'assistant',
-        text: `${verdictStatement}\n\nStatutory 4-agent audit & GraphRAG synthesis complete for: "${finalQuery}". Select any tool button below (Pins, Graph, Passport) to view full legal evidence.`,
+        text: verdictStatement,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        result
+        result: infoResult.isInformational && infoResult.citations ? { ...result, citations: infoResult.citations } : result
       };
 
       setMessages(prev => [...prev, asstMsg]);

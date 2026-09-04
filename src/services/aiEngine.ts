@@ -462,3 +462,123 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
     legalDisclaimer: parsed.legal_disclaimer || parsed.legalDisclaimer || 'DISCLAIMER: IP-SAKTI Sahayak provides source-cited legal & regulatory information.'
   };
 }
+
+/**
+ * Detects whether a query is a general legal/statutory knowledge question
+ * (e.g. "what is Patents Act 1970", "explain Section 3(d)", "what is TKDL")
+ * and provides a detailed educational breakdown.
+ */
+export function checkInformationalQuery(userQuery: string): {
+  isInformational: boolean;
+  topicTitle?: string;
+  explanation?: string;
+  citations?: SourceCitation[];
+} {
+  const qLower = userQuery.toLowerCase().trim();
+
+  const isQuestionPattern =
+    qLower.startsWith('what is') ||
+    qLower.startsWith('what are') ||
+    qLower.startsWith('explain') ||
+    qLower.startsWith('tell me about') ||
+    qLower.startsWith('how does') ||
+    qLower.startsWith('define') ||
+    qLower.startsWith('meaning of') ||
+    qLower.includes('meaning') ||
+    qLower.includes('overview of') ||
+    qLower.includes('details on');
+
+  const mentionsKeyStatute =
+    qLower.includes('patents act') ||
+    qLower.includes('patent act') ||
+    qLower.includes('section 3') ||
+    qLower.includes('sec 3') ||
+    qLower.includes('biodiversity') ||
+    qLower.includes('bd act') ||
+    qLower.includes('nba') ||
+    qLower.includes('tkdl') ||
+    qLower.includes('form iii');
+
+  if (!isQuestionPattern && !mentionsKeyStatute) {
+    return { isInformational: false };
+  }
+
+  if (qLower.includes('patents act') || qLower.includes('patent act')) {
+    return {
+      isInformational: true,
+      topicTitle: 'The Patents Act, 1970 (Amended 2024)',
+      explanation: `The Patents Act, 1970 is the primary statutory framework governing patent law in India. In the context of AYUSH, Herbal Formulations, and Bio-resources, the Act establishes strict criteria to protect traditional knowledge while encouraging non-obvious scientific innovation:
+
+1. Section 3(p): Explicitly excludes traditional knowledge or aggregations/duplications of known properties of traditional components from patentability.
+2. Section 3(d): Excludes mere discoveries of known substances unless a significant, non-obvious enhancement in therapeutic efficacy is proven.
+3. Mandatory Origin Disclosure (2024 Patent Rules): Requires patent applicants to disclose the exact geographical origin of biological materials and traditional knowledge used.
+4. WIPO GRATK Treaty 2024 Alignment: Ensures Indian patent filings align with international standards on genetic resources and associated traditional knowledge.`,
+      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1], MASTER_CITATIONS[3]]
+    };
+  }
+
+  if (qLower.includes('section 3(p)') || qLower.includes('sec 3p') || qLower.includes('section 3p')) {
+    return {
+      isInformational: true,
+      topicTitle: 'Section 3(p) of Patents Act 1970',
+      explanation: `Section 3(p) of the Patents Act 1970 states that "an invention which in effect is traditional knowledge or which is an aggregation or duplication of known properties of traditionally known component or components" is NOT patentable.
+
+Key Implications for AYUSH Formulations:
+• Classical formulations (e.g. Chyawanprash, Avipattikar Churna) are in the public domain and cannot be patented.
+• To overcome Section 3(p), an applicant must demonstrate novel extraction methods, proprietary synergistic ratios, or therapeutic bio-enhancement beyond simple mixing.`,
+      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[4]]
+    };
+  }
+
+  if (qLower.includes('section 3(d)') || qLower.includes('sec 3d') || qLower.includes('section 3d')) {
+    return {
+      isInformational: true,
+      topicTitle: 'Section 3(d) Efficacy Requirement',
+      explanation: `Section 3(d) of the Patents Act 1970 excludes the mere discovery of a new form of a known substance which does not result in the enhancement of the known efficacy of that substance.
+
+Key Takeaways:
+• Purified botanical extracts or isolated active fractions must provide quantitative clinical or bio-assay proof showing superior efficacy or bio-availability compared to raw herbal powders.`,
+      citations: [MASTER_CITATIONS[1]]
+    };
+  }
+
+  if (qLower.includes('biodiversity') || qLower.includes('bd act') || qLower.includes('nba') || qLower.includes('form iii')) {
+    return {
+      isInformational: true,
+      topicTitle: 'Biological Diversity Act, 2002 (Amended 2023) & NBA Form III',
+      explanation: `The Biological Diversity Act 2023 regulates access to Indian biological resources and associated traditional knowledge to prevent bio-piracy and ensure fair benefit-sharing.
+
+Key Provisions:
+1. Section 6(1) Approval: Anyone applying for IP rights (patents) inside or outside India based on Indian biological resources must obtain prior approval from the National Biodiversity Authority (NBA Chennai) via Form III.
+2. Access & Benefit Sharing (ABS): Applicants must contribute benefit-sharing fees (typically 0.1% to 5% of commercial turnover) to local Biodiversity Management Committees (BMCs) and indigenous communities.`,
+      citations: [MASTER_CITATIONS[2], MASTER_CITATIONS[3]]
+    };
+  }
+
+  if (qLower.includes('tkdl') || qLower.includes('traditional knowledge digital library')) {
+    return {
+      isInformational: true,
+      topicTitle: 'TKDL (Traditional Knowledge Digital Library)',
+      explanation: `TKDL is a digital repository created by CSIR and the Ministry of Ayush containing over 450,000 classical formulations from Ayurveda, Siddha, Unani, and Sowa-Rigpa texts translated into 5 international languages.
+
+Key Role:
+• International Patent Offices (USPTO, EPO, JPO, WIPO) use TKDL as prior art to reject invalid patent applications targeting traditional Indian medicine remedies.`,
+      citations: [MASTER_CITATIONS[4]]
+    };
+  }
+
+  if (isQuestionPattern) {
+    return {
+      isInformational: true,
+      topicTitle: `Statutory Explanation: ${userQuery}`,
+      explanation: `IP-SAKTI 4-Agent Decision Engine Explanation for "${userQuery}":
+
+Under Indian IPR and AYUSH Regulatory law, patentability and commercialization of botanical formulations are governed by the Patents Act 1970 (Sec 3p/3d), Biological Diversity Act 2023 (Sec 6 NBA clearance), Drugs & Cosmetics Rules (SLA Rule 158B), and TKDL prior-art corpora.
+
+To evaluate a specific product formulation, submit its botanical composition (e.g. "Ashwagandha hydro-alcoholic extract") for a full 5-pillar statutory audit.`,
+      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[2]]
+    };
+  }
+
+  return { isInformational: false };
+}
