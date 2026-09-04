@@ -185,22 +185,17 @@ async def run_4_agent_pipeline(
 
     is_export = "export" in query.lower() or jurisdiction == "INTERNATIONAL"
 
-    q_lower = query.lower().strip()
-    
-    # 1. Intelligent Intent Classification
-    formulation_terms = ["extract", "capsule", "syrup", "tablet", "powder", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "gummy", "oil", "taila", "ashwagandha", "guduchi", "curcumin", "turmeric", "tulsi", "brahmi", "neem", "composition", "dose", "mg", "bioactive", "phytopharmaceutical"]
-    has_formulation_terms = any(t in q_lower for t in formulation_terms)
+    # 1. Intelligent Zero-Shot LLM Intent Classification
+    try:
+        from backend.services.router_agent import classify_query_intent_llm
+    except ImportError:
+        from services.router_agent import classify_query_intent_llm
 
-    meta_keywords = ["ip sakti", "ipsakti", "ip-sakti", "sakti", "who are you", "what is your name", "my name", "hello", "hi", "hey", "who created"]
-    is_meta = any(k in q_lower for k in meta_keywords)
+    intent_res = await classify_query_intent_llm(query)
+    intent_category = intent_res.get("intent", "FORMULATION_AUDIT")
 
-    question_starters = ["what", "wha", "wt", "who", "how", "can i", "is it", "explain", "tell me", "define", "why", "where", "which"]
-    is_question_structure = any(q_lower.startswith(s) for s in question_starters) or "?" in q_lower
-
-    is_conversational_or_info = is_meta or (is_question_structure and not has_formulation_terms) or not has_formulation_terms
-
-    if is_conversational_or_info and not (has_formulation_terms and len(query.split()) > 3):
-        logger.info("Informational / Conversational query detected (%s). Bypassing 4-Agent Pipeline.", query)
+    if intent_category in ["CONVERSATIONAL", "STATUTORY_KNOWLEDGE"]:
+        logger.info("Zero-Shot LLM Router categorized '%s' as [%s]. Bypassing 4-Agent Audit.", query, intent_category)
         if "ip sakti" in q_lower or "ipsakti" in q_lower or "sakti" in q_lower or "who are you" in q_lower:
             clean_resp = "IP-SAKTI Sahayak is an autonomous AI Decision & Governance Engine designed for Ayurvedic Intellectual Property Rights (IPR) and Biodiversity Compliance (SIH 26045). It features a 4-Agent Statutory Audit System evaluating Patents Act 1970 (Sec 3p/3d) and BD Act 2023."
         else:

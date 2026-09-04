@@ -200,6 +200,37 @@ async def upload_documents(
 
 
 # ---------------------------------------------------------------------------
+# Zero-Shot Intent Router Endpoint
+# ---------------------------------------------------------------------------
+
+class ClassifyRequest(BaseModel):
+    query: str
+
+class ClassifyResponse(BaseModel):
+    intent: str
+    reason: str
+
+@app.post("/api/v1/classify", response_model=ClassifyResponse, tags=["Classification"])
+async def classify_query(request: ClassifyRequest):
+    """
+    Zero-Shot LLM Router Agent endpoint:
+    Classifies any natural language query dynamically into:
+      - CONVERSATIONAL
+      - STATUTORY_KNOWLEDGE
+      - FORMULATION_AUDIT
+    """
+    try:
+        try:
+            from backend.services.router_agent import classify_query_intent_llm
+        except ImportError:
+            from services.router_agent import classify_query_intent_llm
+
+        return await classify_query_intent_llm(request.query)
+    except Exception as e:
+        return {"intent": "FORMULATION_AUDIT", "reason": f"Fallback error: {str(e)}"}
+
+
+# ---------------------------------------------------------------------------
 # Core Audit Endpoint — 4-Agent Pipeline
 # ---------------------------------------------------------------------------
 

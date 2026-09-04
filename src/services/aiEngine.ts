@@ -38,6 +38,8 @@ export function classifyQueryIntent(userQuery: string): 'CONVERSATIONAL' | 'STAT
   return 'CONVERSATIONAL';
 }
 
+import { classifyQueryWithLLM } from './routerAgent';
+
 /**
  * Advanced Dynamic Reasoning Engine for IP-SAKTI
  * Generates custom, context-aware legal & regulatory analysis for ANY user query.
@@ -47,7 +49,8 @@ export async function analyzeQuery(
   jurisdiction: Jurisdiction,
   lawYear: string = '2024'
 ): Promise<QueryResult> {
-  const intent = classifyQueryIntent(userQuery);
+  const classificationRes = await classifyQueryWithLLM(userQuery);
+  const intent = classificationRes.intent;
   const qLower = userQuery.toLowerCase().trim();
 
   if (intent === 'CONVERSATIONAL' || intent === 'STATUTORY_KNOWLEDGE') {
