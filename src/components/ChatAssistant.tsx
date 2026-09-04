@@ -80,6 +80,15 @@ class WorkspaceErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBo
   }
 }
 
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  files?: UploadedFile[];
+  result?: QueryResult;
+}
+
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   jurisdiction,
   onJurisdictionChange,
@@ -100,6 +109,34 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const [activeModalTool, setActiveModalTool] = useState<'classifier' | 'tkdl' | 'abs' | 'whatif' | 'passport' | 'architecture' | null>(null);
   const [isFacilitatorModalOpen, setIsFacilitatorModalOpen] = useState(false);
   const [facilitatorFormSubmitted, setFacilitatorFormSubmitted] = useState(false);
+
+  // Continuous Chat Conversation Messages Stream (ChatGPT / Claude style)
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (activeResult) {
+      return [
+        {
+          id: 'msg-user-init',
+          sender: 'user',
+          text: activeResult.userQuery || 'Ashwagandha Formulation Audit',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          id: 'msg-asst-init',
+          sender: 'assistant',
+          text: 'IP-SAKTI 4-Agent Statutory Audit completed. All legal provisions, TKDL prior art, and NBA ABS compliance verified.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          result: activeResult
+        }
+      ];
+    }
+    return [];
+  });
+
+  const chatEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   // Persistent Audit History Items (SQLite backend / localStorage sync)
   const [historyItems, setHistoryItems] = useState<AuditHistoryItem[]>(() => {
@@ -175,22 +212,48 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const handleQuerySubmit = async (queryText: string) => {
     const hasContent = queryText.trim() || attachedFiles.length > 0;
     if (!hasContent) return;
-    setIsLoading(true);
 
     const finalQuery = attachedFiles.length > 0
       ? `${queryText.trim()} [Attached: ${attachedFiles.map(f => f.name).join(', ')}]`
       : queryText.trim();
 
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Append User Message to continuous stream
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: finalQuery,
+      timestamp: timeStr,
+      files: attachedFiles.length > 0 ? [...attachedFiles] : undefined
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    setInputQuery('');
+    setAttachedFiles([]);
+    setIsLoading(true);
+
     try {
       const result = await analyzeQuery(finalQuery, jurisdiction, lawYear);
       onAnalysisResult(result);
+
+      // Append Assistant Response Message to continuous stream
+      const asstMsg: ChatMessage = {
+        id: `asst-${Date.now()}`,
+        sender: 'assistant',
+        text: `Statutory 4-agent audit & GraphRAG synthesis complete for query: "${finalQuery.length > 45 ? finalQuery.substring(0, 45) + '...' : finalQuery}"`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        result
+      };
+
+      setMessages(prev => [...prev, asstMsg]);
 
       const querySnippet = finalQuery.length > 36 ? finalQuery.substring(0, 36) + '...' : finalQuery;
       const newItem: AuditHistoryItem = {
         id: result.queryId || `hist-${Date.now()}`,
         query: finalQuery,
         title: querySnippet,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: timeStr,
         score: result.readinessPassport?.overallScore || 70,
         result
       };
@@ -206,13 +269,13 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       console.error('Analysis Error:', err);
     } finally {
       setIsLoading(false);
-      setInputQuery('');
-      setAttachedFiles([]);
     }
   };
 
   const handleNewAudit = () => {
+    setMessages([]);
     setInputQuery('');
+    setAttachedFiles([]);
   };
 
   const handleClearHistory = () => {
@@ -225,29 +288,44 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   };
 
   const handleSelectHistoryItem = async (item: AuditHistoryItem) => {
-    // Only auto-collapse history sidebar on mobile screens (< 768px)
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
 
     try {
-      if (item.result) {
-        const mapped = mapBackendResponseToQueryResult(
-          item.result as any,
-          item.query || item.title || 'AYUSH Formulation Audit',
-          jurisdiction,
-          lawYear
-        );
-        onAnalysisResult(mapped);
-        return;
+      let raw = item.result;
+      if (typeof raw === 'string') {
+        try { raw = JSON.parse(raw); } catch (e) {}
       }
 
-      const mockRes = getMockAnalysisForQuery(item.query || item.title || 'AYUSH Formulation Audit', jurisdiction);
-      onAnalysisResult(mockRes);
+      const mapped = mapBackendResponseToQueryResult(
+        raw || item,
+        item.query || item.title || 'AYUSH Formulation Audit',
+        jurisdiction,
+        lawYear
+      );
+
+      onAnalysisResult(mapped);
+
+      const timeStr = item.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      setMessages([
+        {
+          id: `user-hist-${item.id}`,
+          sender: 'user',
+          text: item.query || item.title || 'AYUSH Formulation Audit',
+          timestamp: timeStr
+        },
+        {
+          id: `asst-hist-${item.id}`,
+          sender: 'assistant',
+          text: 'Historical IP-SAKTI statutory audit retrieved from persistent database.',
+          timestamp: timeStr,
+          result: mapped
+        }
+      ]);
     } catch (err) {
       console.error('History item selection error:', err);
-      const fallback = getMockAnalysisForQuery(item.query || item.title || 'AYUSH Formulation Audit', jurisdiction);
-      onAnalysisResult(fallback);
     }
   };
 
@@ -623,143 +701,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
           </div>
         </div>
 
-        {/* Scrollable Workspace Content */}
+        {/* Scrollable Workspace Content — ChatGPT / Claude Style Continuous Stream */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-48 sm:pb-56 relative z-10">
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className="max-w-2xl mx-auto my-12 p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-4 shadow-xl">
-              <div className="w-10 h-10 border-3 border-slate-950 border-t-transparent rounded-full animate-spin mx-auto" />
-              <h3 className="text-sm font-bold text-slate-950 font-display">Executing Autonomous Agent Audit...</h3>
-              <p className="text-xs text-slate-600 max-w-md mx-auto font-medium">
-                Researcher ➔ Auditor ➔ Devil's Advocate ➔ Strategist scanning statutory vector database and classical TKDL corpora.
-              </p>
-            </div>
-          )}
-
-          {/* Active Audit Results */}
-          {!isLoading && activeResult && (
-            <WorkspaceErrorBoundary>
-              <div className="max-w-5xl mx-auto space-y-6">
-                {/* Agent Pipeline Harness */}
-                <AgentPipeline steps={activeResult.agentSteps || []} />
-
-                {/* Detected Regulatory Category Card — Matte Black */}
-                <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
-                  <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
-                    Detected Category
-                  </span>
-                  <h4 className="text-xl font-black text-white font-display">
-                    {activeResult.classification?.title || 'AYUSH Formulation Audit'}
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                    {activeResult.classification?.description || 'Synergistic botanical formulation audit.'}
-                  </p>
-                  <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
-                    <span>Statutory Authority: <strong className="text-white">{activeResult.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
-                    <span>Confidence: <strong className="text-white font-bold">{activeResult.classification?.confidence || 90}%</strong></span>
-                  </div>
-                </div>
-
-                {/* IP Protection Grid */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider">
-                    Multi-Regime Protection Strategy
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(activeResult.ipMap || []).map((ip, idx) => (
-                      <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-black text-slate-950">{ip.title}</span>
-                          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 text-white">
-                            {ip.status}
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
-
-                        <div className="space-y-1">
-                          {(ip.keyRequirements || []).map((req, rIdx) => (
-                            <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
-                              <span className="text-slate-950 font-bold shrink-0">•</span>
-                              <span>{req}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Evidence Topology Graph */}
-                <EvidenceGraph nodes={activeResult.nodes || []} edges={activeResult.edges || []} />
-
-                {/* Citations List */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-slate-950" />
-                    Verified Statutory Citations ({(activeResult.citations || []).length} Sources)
-                  </h4>
-
-                  <div className="space-y-2">
-                    {(activeResult.citations || []).map((cit) => (
-                      <div
-                        key={cit.id}
-                        onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
-                        className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-slate-950">{cit.statuteOrSource}</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
-                              {cit.provision}
-                            </span>
-                          </div>
-                          <span className="text-[10px] font-mono text-slate-950 font-bold">
-                            {cit.confidenceScore}% Grounded
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
-
-                        {selectedCitationId === cit.id && (
-                          <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
-                            <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
-                            <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Escalation Card — Matte Black */}
-                <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-md flex items-center justify-between flex-wrap gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-slate-950"></span>
-                      <h5 className="text-xs font-black font-display text-slate-950 uppercase tracking-wider">
-                        Require Expert Statutory Consultation?
-                      </h5>
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium">
-                      Escalate to AYUSH Patent Attorney or NBA ABS Nodal Officer for official filing support.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setIsFacilitatorModalOpen(true)}
-                    className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-md cursor-pointer hover:shadow-lg"
-                  >
-                    Connect with IP Facilitator
-                  </button>
-                </div>
-              </div>
-            </WorkspaceErrorBoundary>
-          )}
-
-          {/* Welcome Greeting State */}
-          {!isLoading && !activeResult && (
+          {/* Welcome Greeting State (Only when no messages in session) */}
+          {messages.length === 0 && !isLoading && (
             <div className="max-w-2xl mx-auto my-12 text-center space-y-6">
               <div className="w-14 h-14 rounded-3xl bg-slate-950 text-white flex items-center justify-center mx-auto shadow-md">
                 <Sparkles className="w-7 h-7" />
@@ -782,7 +727,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                       setInputQuery(sq.query);
                       handleQuerySubmit(sq.query);
                     }}
-                    className="p-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-400 transition-all group shadow-xs"
+                    className="p-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-400 transition-all group shadow-xs cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-slate-950 group-hover:text-slate-900">
@@ -796,6 +741,181 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
               </div>
             </div>
           )}
+
+          {/* Continuous Messages Stream */}
+          <div className="max-w-4xl mx-auto space-y-8">
+            {messages.map((msg) => {
+              if (msg.sender === 'user') {
+                return (
+                  <div key={msg.id} className="flex justify-end my-4 animate-fade-in">
+                    <div className="max-w-2xl bg-slate-950 text-white rounded-3xl rounded-tr-xs px-5 py-4 shadow-xl border border-slate-900 space-y-2">
+                      <p className="text-xs sm:text-sm font-medium leading-relaxed">{msg.text}</p>
+                      {msg.files && msg.files.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {msg.files.map(f => (
+                            <span key={f.id} className="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                              📎 {f.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <span className="text-[10px] text-slate-400 font-mono block text-right font-semibold">{msg.timestamp}</span>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={msg.id} className="space-y-6 my-6 animate-fade-in">
+                  {/* Assistant Speech Header */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-slate-950 text-white flex items-center justify-center font-bold shrink-0 shadow-md">
+                      <AntigravityLogo size={18} />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black font-display text-slate-950 uppercase tracking-wider block">
+                        IP-SAKTI Sahayak Agent Engine
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono font-semibold">{msg.timestamp}</span>
+                    </div>
+                  </div>
+
+                  {/* Assistant Result Cards Block */}
+                  {msg.result && (
+                    <WorkspaceErrorBoundary>
+                      <div className="space-y-6 pl-0 sm:pl-11">
+                        {/* Agent Pipeline Harness */}
+                        <AgentPipeline steps={msg.result.agentSteps || []} />
+
+                        {/* Detected Regulatory Category Card */}
+                        <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
+                          <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
+                            Detected Category
+                          </span>
+                          <h4 className="text-xl font-black text-white font-display">
+                            {msg.result.classification?.title || 'AYUSH Formulation Audit'}
+                          </h4>
+                          <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                            {msg.result.classification?.description || 'Synergistic botanical formulation audit.'}
+                          </p>
+                          <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
+                            <span>Statutory Authority: <strong className="text-white">{msg.result.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
+                            <span>Confidence: <strong className="text-white font-bold">{msg.result.classification?.confidence || 90}%</strong></span>
+                          </div>
+                        </div>
+
+                        {/* IP Protection Grid */}
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider">
+                            Multi-Regime Protection Strategy
+                          </h4>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {(msg.result.ipMap || []).map((ip, idx) => (
+                              <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-black text-slate-950">{ip.title}</span>
+                                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 text-white">
+                                    {ip.status}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
+
+                                <div className="space-y-1">
+                                  {(ip.keyRequirements || []).map((req, rIdx) => (
+                                    <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
+                                      <span className="text-slate-950 font-bold shrink-0">•</span>
+                                      <span>{req}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Evidence Topology Graph */}
+                        <EvidenceGraph nodes={msg.result.nodes || []} edges={msg.result.edges || []} />
+
+                        {/* Citations List */}
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-slate-950" />
+                            Verified Statutory Citations ({(msg.result.citations || []).length} Sources)
+                          </h4>
+
+                          <div className="space-y-2">
+                            {(msg.result.citations || []).map((cit) => (
+                              <div
+                                key={cit.id}
+                                onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
+                                className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-slate-950">{cit.statuteOrSource}</span>
+                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
+                                      {cit.provision}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-slate-950 font-bold">
+                                    {cit.confidenceScore}% Grounded
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+
+                                {selectedCitationId === cit.id && (
+                                  <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
+                                    <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
+                                    <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Follow-up Suggested Quick Prompts */}
+                        <div className="pt-2 flex flex-wrap gap-2">
+                          {[
+                            'What about Section 3(d) efficacy data requirement?',
+                            'How to submit NBA Form III under BD Act 2023?',
+                            'Check PCT export clearance for USA & WIPO'
+                          ].map((promptText, pIdx) => (
+                            <button
+                              key={pIdx}
+                              onClick={() => {
+                                setInputQuery(promptText);
+                                handleQuerySubmit(promptText);
+                              }}
+                              className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-bold transition-all border border-slate-300 cursor-pointer"
+                            >
+                              💡 {promptText}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </WorkspaceErrorBoundary>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Loading Indicator at end of message stream */}
+            {isLoading && (
+              <div className="max-w-2xl my-6 p-6 rounded-3xl bg-white border border-slate-200 text-center space-y-3 shadow-lg ml-0 sm:ml-11">
+                <div className="w-8 h-8 border-3 border-slate-950 border-t-transparent rounded-full animate-spin mx-auto" />
+                <h3 className="text-xs font-bold text-slate-950 font-display">Executing Parallel Subagent Statutory Audit...</h3>
+                <p className="text-[11px] text-slate-600 font-medium">
+                  Researcher ➔ Auditor ➔ Devil's Advocate ➔ Strategist evaluating prior art & legal provisions.
+                </p>
+              </div>
+            )}
+
+            <div ref={chatEndRef} />
+          </div>
         </div>
 
         {/* Bottom Input Bar — rounded-3xl with 100% full-width input */}
