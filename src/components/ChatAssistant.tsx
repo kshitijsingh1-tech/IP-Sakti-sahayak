@@ -257,7 +257,9 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       const infoResult = checkInformationalQuery(finalQuery);
 
       let verdictStatement = '';
-      if (infoResult.isInformational && infoResult.explanation) {
+      if (result.classification?.category === 'CONVERSATIONAL') {
+        verdictStatement = result.classification.description || `I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate patentability, check TKDL prior art, and navigate NBA compliance. How can I assist you today?`;
+      } else if (infoResult.isInformational && infoResult.explanation) {
         verdictStatement = `STATUTORY EXPLANATION: ${infoResult.topicTitle}\n\n${infoResult.explanation}\n\nStatutory citations and legal sources attached below. Select Pins, Graph, or IP Strategy to explore grounded provisions.`;
       } else {
         const score = result.readinessPassport?.overallScore || 70;

@@ -77,31 +77,8 @@ export async function analyzeQuery(
     };
   }
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
-  // Try fetching live 4-Agent RAG reasoning from FastAPI backend first
-  try {
-    const response = await fetch(`${API_BASE}/api/v1/audit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: userQuery,
-        jurisdiction,
-        law_year: lawYear,
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return mapBackendResponseToQueryResult(data, userQuery, jurisdiction, lawYear);
-    }
-  } catch (err) {
-    console.warn('Backend API offline, using client-side fallback reasoning engine:', err);
-  }
-
-  // Fallback client-side reasoning engine
-  const qLower = userQuery.toLowerCase();
-  
-  const domainKeywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious"];
+  const qLower = userQuery.toLowerCase().trim();
+  const domainKeywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious", "audit", "synergy", "curcumin", "ashwagandha", "guduchi", "tulsi", "brahmi", "neem"];
   const isDomain = domainKeywords.some(k => qLower.includes(k)) || userQuery.split(' ').length > 12;
 
   if (!isDomain) {
@@ -113,7 +90,7 @@ export async function analyzeQuery(
         category: 'CONVERSATIONAL',
         title: 'Conversational Response',
         confidence: 100,
-        description: 'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity. I can help you audit botanical formulations, check TKDL prior art, and navigate ABS compliance. How can I assist you?',
+        description: 'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate Section 3(p)/3(d) patentability, check TKDL prior art, and navigate NBA Form III compliance. How can I assist you with your project today?',
         regulatoryBody: '',
         evidenceRequirements: [],
         ipPosture: '',
@@ -145,6 +122,27 @@ export async function analyzeQuery(
       edges: [],
       legalDisclaimer: ''
     };
+  }
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+  // Try fetching live 4-Agent RAG reasoning from FastAPI backend first
+  try {
+    const response = await fetch(`${API_BASE}/api/v1/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: userQuery,
+        jurisdiction,
+        law_year: lawYear,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return mapBackendResponseToQueryResult(data, userQuery, jurisdiction, lawYear);
+    }
+  } catch (err) {
+    console.warn('Backend API offline, using client-side fallback reasoning engine:', err);
   }
 
   // Extract botanical/formulation keywords
