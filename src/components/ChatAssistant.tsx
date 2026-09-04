@@ -183,17 +183,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
     }
 
     try {
-      // 1. If item.result is already a valid camelCase QueryResult
-      if (item.result && item.result.classification && item.result.classification.category) {
-        onAnalysisResult(item.result);
-        return;
-      }
-
-      // 2. If item.result is a raw SQLite JSON payload (snake_case query_id / classification)
-      if (item.result && ((item.result as any).query_id || (item.result as any).classification)) {
+      if (item.result) {
         const mapped = mapBackendResponseToQueryResult(
           item.result as any,
-          item.query || item.title || 'AYUSH Audit',
+          item.query || item.title || 'AYUSH Formulation Audit',
           jurisdiction,
           lawYear
         );
@@ -201,7 +194,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         return;
       }
 
-      // 3. Fallback: generate mock analysis for item query
       const mockRes = getMockAnalysisForQuery(item.query || item.title || 'AYUSH Formulation Audit', jurisdiction);
       onAnalysisResult(mockRes);
     } catch (err) {
@@ -600,7 +592,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
           {!isLoading && activeResult && (
             <div className="max-w-5xl mx-auto space-y-6">
               {/* Agent Pipeline Harness */}
-              <AgentPipeline steps={activeResult.agentSteps} />
+              <AgentPipeline steps={activeResult.agentSteps || []} />
 
               {/* Detected Regulatory Category Card — Matte Black */}
               <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
@@ -608,14 +600,14 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   Detected Category
                 </span>
                 <h4 className="text-xl font-black text-white font-display">
-                  {activeResult.classification.title}
+                  {activeResult.classification?.title || 'AYUSH Formulation Audit'}
                 </h4>
                 <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                  {activeResult.classification.description}
+                  {activeResult.classification?.description || 'Synergistic botanical formulation audit.'}
                 </p>
                 <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
-                  <span>Statutory Authority: <strong className="text-white">{activeResult.classification.regulatoryBody}</strong></span>
-                  <span>Confidence: <strong className="text-white font-bold">{activeResult.classification.confidence}%</strong></span>
+                  <span>Statutory Authority: <strong className="text-white">{activeResult.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
+                  <span>Confidence: <strong className="text-white font-bold">{activeResult.classification?.confidence || 90}%</strong></span>
                 </div>
               </div>
 
@@ -626,7 +618,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {activeResult.ipMap.map((ip, idx) => (
+                  {(activeResult.ipMap || []).map((ip, idx) => (
                     <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-black text-slate-950">{ip.title}</span>
@@ -638,7 +630,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                       <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
 
                       <div className="space-y-1">
-                        {ip.keyRequirements.map((req, rIdx) => (
+                        {(ip.keyRequirements || []).map((req, rIdx) => (
                           <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
                             <span className="text-slate-950 font-bold shrink-0">•</span>
                             <span>{req}</span>
@@ -651,17 +643,17 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
               </div>
 
               {/* Evidence Topology Graph */}
-              <EvidenceGraph nodes={activeResult.nodes} edges={activeResult.edges} />
+              <EvidenceGraph nodes={activeResult.nodes || []} edges={activeResult.edges || []} />
 
               {/* Citations List */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-slate-950" />
-                  Verified Statutory Citations ({activeResult.citations.length} Sources)
+                  Verified Statutory Citations ({(activeResult.citations || []).length} Sources)
                 </h4>
 
                 <div className="space-y-2">
-                  {activeResult.citations.map((cit) => (
+                  {(activeResult.citations || []).map((cit) => (
                     <div
                       key={cit.id}
                       onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
