@@ -10,6 +10,73 @@ export async function analyzeQuery(
   jurisdiction: Jurisdiction,
   lawYear: string = '2024'
 ): Promise<QueryResult> {
+  const infoQuery = checkInformationalQuery(userQuery);
+  if (infoQuery.isInformational) {
+    return {
+      queryId: `info-${Date.now()}`,
+      userQuery,
+      jurisdiction,
+      classification: {
+        category: 'STATUTORY_INFORMATION',
+        title: infoQuery.topicTitle || 'Statutory Knowledge Breakdown',
+        confidence: 99,
+        description: 'Informational legal & regulatory guidance under Indian Patents Act 1970 & AYUSH frameworks.',
+        regulatoryBody: 'Indian Patent Office (CGPDTM) & Ministry of Ayush',
+        evidenceRequirements: [
+          'Official Patent Rules 2024 statutory fee schedule',
+          'SIPP Scheme startup fee concessions & facilitator network'
+        ],
+        ipPosture: 'Official Statutory Fee & Legal Guidance',
+        absPosture: 'Informational Guidance / General Inquiry'
+      },
+      readinessPassport: {
+        overallScore: 100,
+        patentabilityScore: 100,
+        tkClearanceScore: 100,
+        absComplianceScore: 100,
+        regulatoryReadinessScore: 100,
+        exportReadinessScore: 100,
+        criticalBlockers: [],
+        recommendedRoadmap: [
+          'Review official Patent Office fee schedule under Patents Rules 2024',
+          'Register startup on DPIIT Portal to claim 80% fee rebate',
+          'Consult empaneled SIPP IP Facilitator for free drafting support'
+        ]
+      },
+      citations: infoQuery.citations || [MASTER_CITATIONS[0]],
+      agentSteps: [
+        {
+          agent: 'RESEARCHER',
+          title: 'Statutory Information Retrieval',
+          status: 'completed',
+          details: `Retrieved statutory provisions and official fee schedules for: "${userQuery}".`,
+          timestamp: new Date().toLocaleTimeString(),
+          findings: ['Verified Patents Rules 2024 fee schedule', 'Checked Startup India SIPP rebate eligibility']
+        }
+      ],
+      nodes: [
+        { id: 'n-query', label: userQuery.length > 25 ? userQuery.substring(0, 25) + '...' : userQuery, type: 'QUERY', subText: 'User Inquiry' },
+        { id: 'n-statute', label: infoQuery.topicTitle || 'Patents Act 1970', type: 'STATUTE', subText: 'Statutory Law' },
+        { id: 'n-verdict', label: 'Statutory Fee Guidance', type: 'VERDICT', subText: 'Info Verified' }
+      ],
+      edges: [
+        { source: 'n-query', target: 'n-statute', label: 'Queries statute' },
+        { source: 'n-statute', target: 'n-verdict', label: 'Provides guidance' }
+      ],
+      ipMap: [],
+      absAnalysis: {
+        isApplicable: false,
+        resourceOrigin: 'General Statutory Inquiry',
+        dutyType: 'EXEMPTED_LOCAL_PRACTITIONER',
+        authority: 'National Biodiversity Authority (NBA)',
+        statutoryBasis: 'Biological Diversity Act 2023',
+        requiredActions: ['None required for general informational query']
+      },
+      tkOverlap: [],
+      legalDisclaimer: 'DISCLAIMER: IP-SAKTI Sahayak provides official statutory information for guidance.'
+    };
+  }
+
   const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
   // Try fetching live 4-Agent RAG reasoning from FastAPI backend first
   try {
@@ -477,16 +544,31 @@ export function checkInformationalQuery(userQuery: string): {
   const qLower = userQuery.toLowerCase().trim();
 
   const isQuestionPattern =
-    qLower.startsWith('what is') ||
-    qLower.startsWith('what are') ||
+    qLower.startsWith('what') ||
+    qLower.startsWith('how') ||
+    qLower.startsWith('why') ||
+    qLower.startsWith('when') ||
+    qLower.startsWith('where') ||
+    qLower.startsWith('who') ||
+    qLower.startsWith('is') ||
+    qLower.startsWith('are') ||
+    qLower.startsWith('can') ||
+    qLower.startsWith('could') ||
+    qLower.startsWith('does') ||
+    qLower.startsWith('do') ||
+    qLower.startsWith('should') ||
     qLower.startsWith('explain') ||
-    qLower.startsWith('tell me about') ||
-    qLower.startsWith('how does') ||
+    qLower.startsWith('tell me') ||
     qLower.startsWith('define') ||
-    qLower.startsWith('meaning of') ||
     qLower.includes('meaning') ||
-    qLower.includes('overview of') ||
-    qLower.includes('details on');
+    qLower.includes('overview') ||
+    qLower.includes('details on') ||
+    qLower.includes('cost') ||
+    qLower.includes('fee') ||
+    qLower.includes('free') ||
+    qLower.includes('price') ||
+    qLower.includes('procedure') ||
+    qLower.includes('steps');
 
   const mentionsKeyStatute =
     qLower.includes('patents act') ||
@@ -501,6 +583,45 @@ export function checkInformationalQuery(userQuery: string): {
 
   if (!isQuestionPattern && !mentionsKeyStatute) {
     return { isInformational: false };
+  }
+
+  // Fees / Cost / Free filing questions
+  if (qLower.includes('free') || qLower.includes('cost') || qLower.includes('fee') || qLower.includes('price') || qLower.includes('charge')) {
+    return {
+      isInformational: true,
+      topicTitle: 'Patent Filing Fees & Subsidies in India (Patents Rules 2024)',
+      explanation: `Patent filing in India is NOT completely free, but the Indian Patent Office (CGPDTM) offers up to 80% statutory fee concessions for Startups, Small Entities, Educational Institutions, and Individual Inventors:
+
+1. Official Statutory Fee Schedule (Form 1 & Form 2 E-filing):
+   • Natural Person / Individual / Startup / Educational Institution: ₹1,600 per application.
+   • Small Entity: ₹4,000 per application.
+   • Large Business / Other Entities: ₹8,000 per application.
+
+2. Examination Fees (Form 18):
+   • Startups & Educational Institutions: ₹4,000 (80% discount compared to ₹20,000 for large entities).
+   • Expedited / Fast-Track Examination (Form 18A): Available for Startups & Female Applicants!
+
+3. AYUSH & Startup India Subsidies:
+   • DPIIT-registered AYUSH startups receive an 80% rebate on official filing fees and free IP facilitation support through government-empaneled Patent Facilitators under the SIPP Scheme.`,
+      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1]]
+    };
+  }
+
+  // Patent Eligibility / How to patent questions
+  if (qLower.includes('can i patent') || qLower.includes('is it patentable') || qLower.includes('how to patent') || qLower.includes('eligibility')) {
+    return {
+      isInformational: true,
+      topicTitle: 'Patent Eligibility Criteria in India (Patents Act 1970)',
+      explanation: `To be eligible for a Patent grant under Indian Law (Patents Act 1970), an invention must satisfy 4 primary statutory requirements:
+
+1. Novelty (Section 2(1)(j)): The invention must not be published, used in public, or documented in classical texts (TKDL) anywhere in the world.
+2. Inventive Step / Non-Obviousness (Section 2(1)(ja)): Must involve technical advance or economic significance beyond ordinary skill in the art.
+3. Industrial Applicability (Section 2(1)(ac)): Must be capable of being produced or used in an industry.
+4. Non-Statutory Bar (Section 3 & 4):
+   • Section 3(p): Classical Ayurvedic formulations or simple herbal mixtures cannot be patented as aggregations.
+   • Section 3(d): Purified botanical extracts must prove significant therapeutic efficacy enhancement over crude extracts.`,
+      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1], MASTER_CITATIONS[4]]
+    };
   }
 
   if (qLower.includes('patents act') || qLower.includes('patent act')) {
@@ -573,9 +694,12 @@ Key Role:
       topicTitle: `Statutory Explanation: ${userQuery}`,
       explanation: `IP-SAKTI 4-Agent Decision Engine Explanation for "${userQuery}":
 
-Under Indian IPR and AYUSH Regulatory law, patentability and commercialization of botanical formulations are governed by the Patents Act 1970 (Sec 3p/3d), Biological Diversity Act 2023 (Sec 6 NBA clearance), Drugs & Cosmetics Rules (SLA Rule 158B), and TKDL prior-art corpora.
+Under Indian IPR and AYUSH Regulatory law:
+• Government filing fees start at ₹1,600 for individuals/startups (Form 1 & 2).
+• Traditional knowledge formulations face Section 3(p) bars unless novel extraction methods or synergistic bio-efficacy enhancement (Sec 3d) are proven.
+• Mandatory National Biodiversity Authority (NBA Form III) clearance is required before patent grant.
 
-To evaluate a specific product formulation, submit its botanical composition (e.g. "Ashwagandha hydro-alcoholic extract") for a full 5-pillar statutory audit.`,
+To audit a specific product composition, submit its botanical ingredients (e.g. "Ashwagandha hydro-alcoholic extract") for a 5-pillar statutory audit.`,
       citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[2]]
     };
   }

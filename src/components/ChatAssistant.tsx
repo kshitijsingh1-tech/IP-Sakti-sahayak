@@ -835,9 +835,11 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                       <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1 font-medium">
                         <div className="flex items-center justify-between text-slate-950 font-bold">
                           <span>{msg.result.classification?.title || 'AYUSH Statutory Audit'}</span>
-                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-950 text-white font-bold">
-                            Score: {msg.result.readinessPassport?.overallScore || 78}%
-                          </span>
+                          {msg.result.classification?.category !== 'STATUTORY_INFORMATION' && (
+                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-950 text-white font-bold">
+                              Score: {msg.result.readinessPassport?.overallScore || 78}%
+                            </span>
+                          )}
                         </div>
                         <p className="text-slate-600 text-[11px] leading-normal">{msg.result.classification?.description}</p>
                       </div>
