@@ -4,6 +4,7 @@ import { AntigravityLogo } from './AntigravityLogo';
 import { Sparkles, Home, Rocket } from 'lucide-react';
 
 import { TRANSLATIONS } from '../data/translations';
+import { triggerGoogleTranslate } from '../services/translator';
 
 interface HeaderProps {
   jurisdiction: Jurisdiction;
@@ -103,7 +104,11 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Language Selector Pill */}
           <select
             value={selectedLanguage}
-            onChange={(e) => onLanguageChange(e.target.value)}
+            onChange={(e) => {
+              const lang = e.target.value;
+              onLanguageChange(lang);
+              triggerGoogleTranslate(lang);
+            }}
             className="bg-slate-100 text-slate-950 font-extrabold rounded-full px-3 py-1.5 text-xs border border-slate-300 focus:outline-none cursor-pointer"
           >
             <option value="en">EN</option>

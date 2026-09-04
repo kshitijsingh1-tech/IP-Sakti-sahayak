@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { QueryResult, Jurisdiction, AuditHistoryItem, SampleQuery } from '../types';
 import { SAMPLE_QUERIES, getMockAnalysisForQuery } from '../data/mockData';
 import { analyzeQuery, mapBackendResponseToQueryResult } from '../services/aiEngine';
+import { triggerGoogleTranslate } from '../services/translator';
 import { AgentPipeline } from './AgentPipeline';
 import { EvidenceGraph } from './EvidenceGraph';
 import { AntigravityLogo } from './AntigravityLogo';
@@ -58,12 +59,13 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
     } catch (e) {
       console.warn('Failed to parse localStorage audit history:', e);
     }
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return [
       {
         id: 'hist-1',
         query: SAMPLE_QUERIES[3].query,
         title: 'Curcumin 98% Bioactive Fraction Audit',
-        timestamp: 'Today, 8:15 PM',
+        timestamp: `Today, ${nowStr}`,
         score: 88,
         result: getMockAnalysisForQuery(SAMPLE_QUERIES[3].query, jurisdiction)
       },
@@ -71,7 +73,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         id: 'hist-2',
         query: SAMPLE_QUERIES[0].query,
         title: 'Ashwagandha + Guduchi Stress Capsules',
-        timestamp: 'Today, 6:40 PM',
+        timestamp: `Today, ${nowStr}`,
         score: 74,
         result: getMockAnalysisForQuery(SAMPLE_QUERIES[0].query, jurisdiction)
       },
@@ -138,7 +140,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         id: result.queryId || `hist-${Date.now()}`,
         query: finalQuery,
         title: querySnippet,
-        timestamp: 'Just now',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         score: result.readinessPassport?.overallScore || 70,
         result
       };
@@ -554,7 +556,11 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
             {/* Language Selector */}
             <select
               value={selectedLanguage}
-              onChange={(e) => onLanguageChange(e.target.value)}
+              onChange={(e) => {
+                const lang = e.target.value;
+                onLanguageChange(lang);
+                triggerGoogleTranslate(lang);
+              }}
               className="bg-slate-100 text-slate-950 font-bold rounded-full px-2.5 py-1 text-xs border border-slate-300 focus:outline-none cursor-pointer hidden sm:block"
             >
               <option value="en">EN</option>

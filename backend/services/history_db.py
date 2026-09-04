@@ -9,10 +9,14 @@ import json
 import time
 import os
 import logging
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Indian Standard Timezone (IST - UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 
 DB_PATH = Path(os.getenv("HISTORY_DB_PATH", "./data/ipsakti_history.db"))
 
@@ -56,7 +60,7 @@ def save_audit_session(audit_result: Dict[str, Any]) -> None:
         jurisdiction = audit_result.get("jurisdiction", "INDIA")
         law_year = audit_result.get("law_year", "2024")
         now_ts = int(time.time())
-        formatted_time = time.strftime("%b %d, %Y %I:%M %p")
+        formatted_time = datetime.now(IST).strftime("%b %d, %I:%M %p")
         
         overall_score = audit_result.get("readiness_passport", {}).get("overall_score", 70)
         category_title = audit_result.get("classification", {}).get("title", "AYUSH IPR Audit")
