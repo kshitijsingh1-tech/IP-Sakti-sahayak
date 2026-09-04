@@ -1,6 +1,43 @@
 import type { QueryResult, Jurisdiction, SourceCitation } from '../types';
 import { MASTER_CITATIONS, getMockAnalysisForQuery } from '../data/mockData';
 
+export function classifyQueryIntent(userQuery: string): 'CONVERSATIONAL' | 'STATUTORY_KNOWLEDGE' | 'FORMULATION_AUDIT' {
+  const qLower = userQuery.toLowerCase().trim();
+
+  // Formulation indicators: ingredients, dosage forms, extract ratios, product claims
+  const formulationTerms = [
+    'extract', 'capsule', 'syrup', 'tablet', 'powder', 'churna', 'samhita',
+    'fraction', 'tea', 'aahar', 'wellness', 'gummy', 'oil', 'taila',
+    'ashwagandha', 'guduchi', 'curcumin', 'turmeric', 'tulsi', 'brahmi', 'neem',
+    'triphala', 'shilajit', 'amla', 'bhasma', 'kashaya', 'kwath', 'avaleha',
+    'formulation', 'composition', 'dose', 'mg', 'ratio', 'bioactive', 'phytopharmaceutical'
+  ];
+
+  const hasFormulationTerms = formulationTerms.some(t => qLower.includes(t));
+
+  // Meta / Platform / Identity / Greeting questions
+  const metaKeywords = ['ip sakti', 'ipsakti', 'ip-sakti', 'sakti', 'who are you', 'what is your name', 'my name', 'hello', 'hi', 'hey', 'who created', 'about sakti'];
+  const isMeta = metaKeywords.some(k => qLower.includes(k));
+
+  // Question structure starters (including common typos like "wha is", "wt is")
+  const questionStarters = ['what', 'wha', 'wt', 'who', 'how', 'can i', 'is it', 'explain', 'tell me', 'define', 'why', 'where', 'which'];
+  const isQuestionStructure = questionStarters.some(s => qLower.startsWith(s)) || qLower.includes('?');
+
+  if (isMeta || qLower.includes('your name') || qLower.includes('my name')) {
+    return 'CONVERSATIONAL';
+  }
+
+  if (isQuestionStructure && !hasFormulationTerms) {
+    return 'STATUTORY_KNOWLEDGE';
+  }
+
+  if (hasFormulationTerms || userQuery.split(' ').length > 10) {
+    return 'FORMULATION_AUDIT';
+  }
+
+  return 'CONVERSATIONAL';
+}
+
 /**
  * Advanced Dynamic Reasoning Engine for IP-SAKTI
  * Generates custom, context-aware legal & regulatory analysis for ANY user query.
@@ -10,90 +47,27 @@ export async function analyzeQuery(
   jurisdiction: Jurisdiction,
   lawYear: string = '2024'
 ): Promise<QueryResult> {
-  const infoQuery = checkInformationalQuery(userQuery);
-  if (infoQuery.isInformational) {
-    return {
-      queryId: `info-${Date.now()}`,
-      userQuery,
-      jurisdiction,
-      classification: {
-        category: 'STATUTORY_INFORMATION',
-        title: infoQuery.topicTitle || 'Statutory Knowledge Breakdown',
-        confidence: 99,
-        description: 'Informational legal & regulatory guidance under Indian Patents Act 1970 & AYUSH frameworks.',
-        regulatoryBody: 'Indian Patent Office (CGPDTM) & Ministry of Ayush',
-        evidenceRequirements: [
-          'Official Patent Rules 2024 statutory fee schedule',
-          'SIPP Scheme startup fee concessions & facilitator network'
-        ],
-        ipPosture: 'Official Statutory Fee & Legal Guidance',
-        absPosture: 'Informational Guidance / General Inquiry'
-      },
-      readinessPassport: {
-        overallScore: 100,
-        patentabilityScore: 100,
-        tkClearanceScore: 100,
-        absComplianceScore: 100,
-        regulatoryReadinessScore: 100,
-        exportReadinessScore: 100,
-        criticalBlockers: [],
-        recommendedRoadmap: [
-          'Review official Patent Office fee schedule under Patents Rules 2024',
-          'Register startup on DPIIT Portal to claim 80% fee rebate',
-          'Consult empaneled SIPP IP Facilitator for free drafting support'
-        ]
-      },
-      citations: infoQuery.citations || [MASTER_CITATIONS[0]],
-      agentSteps: [
-        {
-          agent: 'RESEARCHER',
-          title: 'Statutory Information Retrieval',
-          status: 'completed',
-          details: `Retrieved statutory provisions and official fee schedules for: "${userQuery}".`,
-          timestamp: new Date().toLocaleTimeString(),
-          findings: ['Verified Patents Rules 2024 fee schedule', 'Checked Startup India SIPP rebate eligibility']
-        }
-      ],
-      nodes: [
-        { id: 'n-query', label: userQuery.length > 25 ? userQuery.substring(0, 25) + '...' : userQuery, type: 'QUERY', subText: 'User Inquiry' },
-        { id: 'n-statute', label: infoQuery.topicTitle || 'Patents Act 1970', type: 'STATUTE', subText: 'Statutory Law' },
-        { id: 'n-verdict', label: 'Statutory Fee Guidance', type: 'VERDICT', subText: 'Info Verified' }
-      ],
-      edges: [
-        { source: 'n-query', target: 'n-statute', label: 'Queries statute' },
-        { source: 'n-statute', target: 'n-verdict', label: 'Provides guidance' }
-      ],
-      ipMap: [],
-      absAnalysis: {
-        isApplicable: false,
-        resourceOrigin: 'General Statutory Inquiry',
-        dutyType: 'EXEMPTED_LOCAL_PRACTITIONER',
-        authority: 'National Biodiversity Authority (NBA)',
-        statutoryBasis: 'Biological Diversity Act 2023',
-        requiredActions: ['None required for general informational query']
-      },
-      tkOverlap: [],
-      legalDisclaimer: 'DISCLAIMER: IP-SAKTI Sahayak provides official statutory information for guidance.'
-    };
-  }
-
+  const intent = classifyQueryIntent(userQuery);
   const qLower = userQuery.toLowerCase().trim();
-  const domainKeywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious", "audit", "synergy", "curcumin", "ashwagandha", "guduchi", "tulsi", "brahmi", "neem"];
-  const isDomain = domainKeywords.some(k => qLower.includes(k)) || userQuery.split(' ').length > 12;
 
-  if (!isDomain) {
+  if (intent === 'CONVERSATIONAL' || intent === 'STATUTORY_KNOWLEDGE') {
+    const infoResult = checkInformationalQuery(userQuery);
+    const desc = infoResult.isInformational && infoResult.explanation 
+      ? infoResult.explanation 
+      : 'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate Section 3(p)/3(d) patentability, check TKDL prior art, and navigate NBA Form III compliance. How can I assist you with your project today?';
+
     return {
       queryId: `conv-${Date.now()}`,
       userQuery,
       jurisdiction,
       classification: {
-        category: 'CONVERSATIONAL',
-        title: 'Conversational Response',
+        category: intent === 'STATUTORY_KNOWLEDGE' ? 'STATUTORY_INFORMATION' : 'CONVERSATIONAL',
+        title: (infoResult.isInformational && infoResult.topicTitle) ? infoResult.topicTitle : 'IP-SAKTI Guidance',
         confidence: 100,
-        description: 'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate Section 3(p)/3(d) patentability, check TKDL prior art, and navigate NBA Form III compliance. How can I assist you with your project today?',
-        regulatoryBody: '',
+        description: desc,
+        regulatoryBody: 'Indian Patent Office & Ministry of Ayush',
         evidenceRequirements: [],
-        ipPosture: '',
+        ipPosture: 'Informational Guidance',
         absPosture: ''
       },
       ipMap: [],
@@ -117,7 +91,7 @@ export async function analyzeQuery(
         recommendedRoadmap: []
       },
       agentSteps: [],
-      citations: [],
+      citations: infoResult.citations || [],
       nodes: [],
       edges: [],
       legalDisclaimer: ''
@@ -648,6 +622,15 @@ export function checkInformationalQuery(userQuery: string): {
 3. AYUSH & Startup India Subsidies:
    • DPIIT-registered AYUSH startups receive an 80% rebate on official filing fees and free IP facilitation support through government-empaneled Patent Facilitators under the SIPP Scheme.`,
       citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1]]
+    };
+  }
+
+  if (qLower.includes('ip sakti') || qLower.includes('ipsakti') || qLower.includes('ip-sakti') || qLower.includes('sakti') || qLower.includes('who are you') || qLower.includes('your name')) {
+    return {
+      isInformational: true,
+      topicTitle: 'IP-SAKTI Sahayak Platform Overview',
+      explanation: `IP-SAKTI Sahayak is an autonomous AI Decision & Governance Engine designed for Ayurvedic Intellectual Property Rights (IPR) and Biodiversity Compliance (SIH 26045).\n\nKey Capabilities:\n1. 4-Agent Statutory Audit: Parallel execution of Researcher, Auditor, Devil's Advocate, and Strategist agents evaluating Patents Act 1970 (Sec 3p/3d) and BD Act 2023.\n2. TKDL Prior-Art Overlap Radar: Checks formulations against Traditional Knowledge Digital Library references.\n3. NBA Form III Access & Benefit Sharing (ABS) Clearance: Determines pre-approval duties for Indian biological resources.\n4. Dual Operational Modes: Switch seamlessly between Guide Bot Mode (general guidance Q&A) and IP-SAKTI Audit Mode (full formulation audits).`,
+      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[3]]
     };
   }
 

@@ -185,24 +185,29 @@ async def run_4_agent_pipeline(
 
     is_export = "export" in query.lower() or jurisdiction == "INTERNATIONAL"
 
-    q_lower = query.lower()
+    q_lower = query.lower().strip()
     
-    # 1. Intent Detection: Check if query is an informational/conversational question vs a formulation audit
-    domain_keywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious"]
-    is_domain = any(k in q_lower for k in domain_keywords) or len(query.split()) > 12
+    # 1. Intelligent Intent Classification
+    formulation_terms = ["extract", "capsule", "syrup", "tablet", "powder", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "gummy", "oil", "taila", "ashwagandha", "guduchi", "curcumin", "turmeric", "tulsi", "brahmi", "neem", "composition", "dose", "mg", "bioactive", "phytopharmaceutical"]
+    has_formulation_terms = any(t in q_lower for t in formulation_terms)
 
-    info_questions = ["what is patent", "what is a patent", "what is patents act", "what is tkdl", "what is biodiversity", "what is nba", "how to patent", "is patent free", "who are you", "what is your name", "my name", "hello", "hi", "explain patent"]
-    is_info_question = any(q in q_lower for q in info_questions) or q_lower.startswith("what is") or q_lower.startswith("explain ")
-    
-    formulation_terms = ["extract", "formulation", "capsule", "syrup", "tablet", "powder", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "gummy", "oil", "taila", "ashwagandha", "guduchi", "curcumin", "turmeric", "tulsi", "brahmi", "neem", "composition", "dose", "mg"]
-    is_formulation = any(k in q_lower for k in formulation_terms) or len(query.split()) > 12
+    meta_keywords = ["ip sakti", "ipsakti", "ip-sakti", "sakti", "who are you", "what is your name", "my name", "hello", "hi", "hey", "who created"]
+    is_meta = any(k in q_lower for k in meta_keywords)
 
-    if (is_info_question and not is_formulation) or not is_domain:
-        logger.info("Informational / Conversational query detected. Bypassing 4-Agent Pipeline.")
-        clean_resp = f"I am IP-SAKTI Sahayak, your AI assistant for Ayurvedic IPR & Biodiversity compliance. Guidance regarding '{query}': A Patent is an exclusive right granted for an invention under the Patents Act 1970."
+    question_starters = ["what", "wha", "wt", "who", "how", "can i", "is it", "explain", "tell me", "define", "why", "where", "which"]
+    is_question_structure = any(q_lower.startswith(s) for s in question_starters) or "?" in q_lower
+
+    is_conversational_or_info = is_meta or (is_question_structure and not has_formulation_terms) or not has_formulation_terms
+
+    if is_conversational_or_info and not (has_formulation_terms and len(query.split()) > 3):
+        logger.info("Informational / Conversational query detected (%s). Bypassing 4-Agent Pipeline.", query)
+        if "ip sakti" in q_lower or "ipsakti" in q_lower or "sakti" in q_lower or "who are you" in q_lower:
+            clean_resp = "IP-SAKTI Sahayak is an autonomous AI Decision & Governance Engine designed for Ayurvedic Intellectual Property Rights (IPR) and Biodiversity Compliance (SIH 26045). It features a 4-Agent Statutory Audit System evaluating Patents Act 1970 (Sec 3p/3d) and BD Act 2023."
+        else:
+            clean_resp = f"I am IP-SAKTI Sahayak, your AI assistant for Ayurvedic IPR & Biodiversity compliance. Guidance regarding '{query}': General statutory inquiries are answered cleanly without product audit scorecards."
         
         if llm:
-            conv_prompt = f"You are IP-SAKTI Sahayak, an AI assistant for Ayurvedic IPR & Biodiversity compliance. The user asked: '{query}'. Provide a concise, highly intelligent, structured guidance response explaining the concept clearly. Do NOT generate synthetic product scores. Do NOT use <think> tags."
+            conv_prompt = f"You are IP-SAKTI Sahayak, an AI assistant for Ayurvedic IPR & Biodiversity compliance. The user asked: '{query}'. Provide a concise, highly intelligent, structured guidance response explaining the concept clearly. Do NOT generate synthetic product scores or formulation audit cards. Do NOT use <think> tags."
             try:
                 response = await chat(llm, system="You are an expert AYUSH IPR legal assistant.", user=conv_prompt)
                 clean_resp = clean_llm_text(response)
