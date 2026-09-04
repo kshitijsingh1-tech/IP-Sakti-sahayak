@@ -651,19 +651,20 @@ export function checkInformationalQuery(userQuery: string): {
     };
   }
 
-  // Patent Eligibility / How to patent questions
-  if (qLower.includes('can i patent') || qLower.includes('is it patentable') || qLower.includes('how to patent') || qLower.includes('eligibility')) {
+  // Patent Eligibility / Definition / How to patent questions
+  if (qLower.includes('what is patent') || qLower.includes('what is a patent') || qLower.includes('can i patent') || qLower.includes('is it patentable') || qLower.includes('how to patent') || qLower.includes('eligibility')) {
     return {
       isInformational: true,
-      topicTitle: 'Patent Eligibility Criteria in India (Patents Act 1970)',
-      explanation: `To be eligible for a Patent grant under Indian Law (Patents Act 1970), an invention must satisfy 4 primary statutory requirements:
+      topicTitle: 'What is a Patent? (Patents Act 1970 Overview)',
+      explanation: `A Patent is an exclusive statutory right granted by the Government of India (under the Patents Act, 1970) for an invention—a product or a process—that provides a new way of doing something or offers a new technical solution to a problem.
 
-1. Novelty (Section 2(1)(j)): The invention must not be published, used in public, or documented in classical texts (TKDL) anywhere in the world.
-2. Inventive Step / Non-Obviousness (Section 2(1)(ja)): Must involve technical advance or economic significance beyond ordinary skill in the art.
+Key Statutory Requirements for Patent Grant in India:
+1. Novelty (Section 2(1)(j)): The invention must not be published, disclosed in classical texts (TKDL), or known in the public domain anywhere in the world.
+2. Inventive Step / Non-Obviousness (Section 2(1)(ja)): Must involve technical advancement or economic significance beyond ordinary skill in the art.
 3. Industrial Applicability (Section 2(1)(ac)): Must be capable of being produced or used in an industry.
-4. Non-Statutory Bar (Section 3 & 4):
-   • Section 3(p): Classical Ayurvedic formulations or simple herbal mixtures cannot be patented as aggregations.
-   • Section 3(d): Purified botanical extracts must prove significant therapeutic efficacy enhancement over crude extracts.`,
+4. Statutory Exclusions (AYUSH Framework):
+   • Section 3(p): Classical Ayurvedic formulations or simple herbal mixtures are barred as public domain traditional knowledge.
+   • Section 3(d): Purified botanical extracts must prove significant quantitative enhancement of therapeutic efficacy over crude extracts.`,
       citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1], MASTER_CITATIONS[4]]
     };
   }
