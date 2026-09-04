@@ -14,10 +14,12 @@ ENV PYTHONUNBUFFERED=1
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
+# Create runtime data directories
+RUN mkdir -p data logs
+
 # Copy static frontend build and backend code
 COPY --from=frontend-builder /app/dist ./dist
 COPY backend ./backend
-COPY data ./data
 
 EXPOSE 8000
 
