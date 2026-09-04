@@ -185,6 +185,66 @@ async def run_4_agent_pipeline(
 
     is_export = "export" in query.lower() or jurisdiction == "INTERNATIONAL"
 
+    q_lower = query.lower()
+    
+    # 1. Intent Detection: Check if the query is a domain-specific IP/AYUSH query
+    domain_keywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious"]
+    is_domain = any(k in q_lower for k in domain_keywords) or len(query.split()) > 12
+
+    if not is_domain:
+        logger.info("Non-domain conversational query detected. Bypassing 4-Agent Pipeline.")
+        clean_resp = "I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity. How can I assist you with your formulation audit or patent strategy today?"
+        
+        if llm:
+            conv_prompt = f"You are IP-SAKTI Sahayak, an AI assistant for Ayurvedic IPR & Biodiversity compliance. The user said: '{query}'. Provide a concise, intelligent conversational response. If they ask about your identity, explain your purpose briefly. Do NOT provide legal advice. Do NOT use <think> tags."
+            try:
+                response = await chat(llm, system="You are a helpful AI assistant.", user=conv_prompt)
+                clean_resp = clean_llm_text(response)
+            except Exception as e:
+                logger.warning(f"Conversational LLM call failed: {e}")
+                
+        return {
+            "query_id": f"conv-{int(time.time())}",
+            "user_query": query,
+            "jurisdiction": jurisdiction,
+            "law_year": law_year,
+            "classification": {
+                "category": "CONVERSATIONAL",
+                "title": "Conversational Response",
+                "confidence": 100,
+                "description": clean_resp,
+                "regulatory_body": "",
+                "evidence_requirements": [],
+                "ip_posture": "",
+                "abs_posture": ""
+            },
+            "ip_map": [],
+            "abs_analysis": {
+                "is_applicable": False,
+                "resource_origin": "",
+                "duty_type": "EXEMPTED_LOCAL_PRACTITIONER",
+                "authority": "",
+                "statutory_basis": "",
+                "required_actions": []
+            },
+            "tk_overlap": [],
+            "readiness_passport": {
+                "overall_score": 0,
+                "patentability_score": 0,
+                "tk_clearance_score": 0,
+                "abs_compliance_score": 0,
+                "regulatory_readiness_score": 0,
+                "export_readiness_score": 0,
+                "critical_blockers": [],
+                "recommended_roadmap": []
+            },
+            "agent_steps": [],
+            "citations": [],
+            "nodes": [],
+            "edges": [],
+            "legal_disclaimer": ""
+        }
+
     # Parallel Execution: Agents 1 & 2
     researcher_task = _run_researcher_agent(query, jurisdiction, law_year, llm)
     auditor_task = _run_auditor_agent(query, law_year, llm)

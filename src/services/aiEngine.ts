@@ -100,6 +100,52 @@ export async function analyzeQuery(
 
   // Fallback client-side reasoning engine
   const qLower = userQuery.toLowerCase();
+  
+  const domainKeywords = ["patent", "ayurved", "ip", "tkdl", "nba", "biodiversity", "extract", "formulation", "herb", "botanical", "trademark", "copyright", "sih", "sakti", "export", "act", "section", "rule", "fee", "cost", "drug", "medicine", "plant", "churna", "samhita", "fraction", "tea", "aahar", "wellness", "fssai", "grant", "novel", "obvious"];
+  const isDomain = domainKeywords.some(k => qLower.includes(k)) || userQuery.split(' ').length > 12;
+
+  if (!isDomain) {
+    return {
+      queryId: `conv-${Date.now()}`,
+      userQuery,
+      jurisdiction,
+      classification: {
+        category: 'CONVERSATIONAL',
+        title: 'Conversational Response',
+        confidence: 100,
+        description: 'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity. I can help you audit botanical formulations, check TKDL prior art, and navigate ABS compliance. How can I assist you?',
+        regulatoryBody: '',
+        evidenceRequirements: [],
+        ipPosture: '',
+        absPosture: ''
+      },
+      ipMap: [],
+      absAnalysis: {
+        isApplicable: false,
+        resourceOrigin: '',
+        dutyType: 'EXEMPTED_LOCAL_PRACTITIONER',
+        authority: '',
+        statutoryBasis: '',
+        requiredActions: []
+      },
+      tkOverlap: [],
+      readinessPassport: {
+        overallScore: 0,
+        patentabilityScore: 0,
+        tkClearanceScore: 0,
+        absComplianceScore: 0,
+        regulatoryReadinessScore: 0,
+        exportReadinessScore: 0,
+        criticalBlockers: [],
+        recommendedRoadmap: []
+      },
+      agentSteps: [],
+      citations: [],
+      nodes: [],
+      edges: [],
+      legalDisclaimer: ''
+    };
+  }
 
   // Extract botanical/formulation keywords
   const isClassical = qLower.includes('chyawanprash') || qLower.includes('samhita') || qLower.includes('classical') || qLower.includes('churna') || qLower.includes('taila') || qLower.includes('asava');
@@ -688,7 +734,7 @@ Key Role:
     };
   }
 
-  if (isQuestionPattern) {
+  if (isQuestionPattern && mentionsKeyStatute) {
     return {
       isInformational: true,
       topicTitle: `Statutory Explanation: ${userQuery}`,

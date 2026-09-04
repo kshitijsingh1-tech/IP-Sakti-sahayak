@@ -844,7 +844,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                     </p>
 
                     {/* Brief Statutory Summary pill */}
-                    {msg.result && (
+                    {msg.result && msg.result.classification?.category !== 'CONVERSATIONAL' && (
                       <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1 font-medium">
                         <div className="flex items-center justify-between text-slate-950 font-bold">
                           <span>{msg.result.classification?.title || 'AYUSH Statutory Audit'}</span>
@@ -859,10 +859,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                     )}
 
                     {/* Short Interactive Action Icons Row */}
-                    {msg.result && (
+                    {msg.result && msg.result.classification?.category !== 'CONVERSATIONAL' && (
                       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
                         <button
-                          onClick={() => handleOpenToolForMessage('citations', msg.result)}
+                          onClick={() => handleOpenToolForMessage('citations', msg.result!)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="View Statutory Pins & Citations"
                         >
@@ -871,7 +871,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                         </button>
 
                         <button
-                          onClick={() => handleOpenToolForMessage('graph', msg.result)}
+                          onClick={() => handleOpenToolForMessage('graph', msg.result!)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="Open Interactive Topology Graph"
                         >
@@ -880,7 +880,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                         </button>
 
                         <button
-                          onClick={() => handleOpenToolForMessage('architecture', msg.result)}
+                          onClick={() => handleOpenToolForMessage('architecture', msg.result!)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="Inspect 4-Agent Reasoning Harness"
                         >
@@ -889,7 +889,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                         </button>
 
                         <button
-                          onClick={() => handleOpenToolForMessage('classifier', msg.result)}
+                          onClick={() => handleOpenToolForMessage('classifier', msg.result!)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="View Regulatory Classification & IP Strategy"
                         >
@@ -898,7 +898,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                         </button>
 
                         <button
-                          onClick={() => handleOpenToolForMessage('passport', msg.result)}
+                          onClick={() => handleOpenToolForMessage('passport', msg.result!)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="View 5-Pillar Scorecard & Passport"
                         >
