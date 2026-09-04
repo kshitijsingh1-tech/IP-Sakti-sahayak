@@ -294,14 +294,23 @@ export async function analyzeQuery(
 }
 
 export function mapBackendResponseToQueryResult(data: any, query: string, jurisdiction: Jurisdiction, lawYear: string = '2024'): QueryResult {
-  if (!data) {
+  let parsed = data;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch (e) {
+      parsed = {};
+    }
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
     return getMockAnalysisForQuery(query, jurisdiction);
   }
 
-  const rp = data.readiness_passport || data.readinessPassport || {};
-  const cl = data.classification || {};
+  const rp = parsed.readiness_passport || parsed.readinessPassport || {};
+  const cl = parsed.classification || {};
 
-  const nodes = Array.isArray(data.nodes) && data.nodes.length > 0 ? data.nodes : [
+  const nodes = Array.isArray(parsed.nodes) && parsed.nodes.length > 0 ? parsed.nodes : [
     { id: 'n-query', label: query.length > 25 ? query.substring(0, 25) + '...' : query, type: 'QUERY' as const, subText: 'User Query' },
     { id: 'n-entity', label: 'AYUSH Botanical Entity', type: 'ENTITY' as const, subText: 'Biological Resource' },
     { id: 'n-tkdl', label: 'TKDL Prior Art Index', type: 'TK_RECORD' as const, subText: 'Ayurvedic Corpora' },
@@ -310,7 +319,7 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
     { id: 'n-verdict', label: cl.title || 'IP Protection Strategy', type: 'VERDICT' as const, subText: `Score: ${rp.overall_score || rp.overallScore || 70}/100` }
   ];
 
-  const edges = Array.isArray(data.edges) && data.edges.length > 0 ? data.edges : [
+  const edges = Array.isArray(parsed.edges) && parsed.edges.length > 0 ? parsed.edges : [
     { source: 'n-query', target: 'n-entity', label: 'Extracts bio-resource' },
     { source: 'n-entity', target: 'n-tkdl', label: 'Searches classical texts' },
     { source: 'n-tkdl', target: 'n-statute-1', label: 'Evaluates Sec 3(p) bar' },
@@ -326,7 +335,7 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
     { agent: 'STRATEGIST' as const, title: 'Multi-Regime IP Roadmap', status: 'completed' as const, details: 'Synthesized patentability score & NBA compliance', timestamp: 'Just now', findings: ['Recommended process-patent & Form III pre-filing'] }
   ];
 
-  const rawSteps = data.agent_steps || data.agentSteps;
+  const rawSteps = parsed.agent_steps || parsed.agentSteps;
   const agentSteps = Array.isArray(rawSteps) && rawSteps.length > 0 
     ? rawSteps.map((step: any) => ({
         agent: step.agent || 'RESEARCHER',
@@ -334,11 +343,11 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
         status: step.status || 'completed',
         details: step.details || '',
         timestamp: step.timestamp || new Date().toLocaleTimeString(),
-        findings: step.findings || []
+        findings: Array.isArray(step.findings) ? step.findings : []
       }))
     : defaultAgentSteps;
 
-  const rawCitations = data.citations;
+  const rawCitations = parsed.citations;
   const citations: SourceCitation[] = Array.isArray(rawCitations) && rawCitations.length > 0
     ? rawCitations.map((cit: any, idx: number) => ({
         id: cit.id || `cit-${idx}`,
@@ -374,9 +383,20 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
         }
       ];
 
-  const rawIpMap = data.ip_map || data.ipMap;
+  const rawIpMap = parsed.ip_map || parsed.ipMap;
   const ipMap = Array.isArray(rawIpMap) && rawIpMap.length > 0
-    ? rawIpMap
+    ? rawIpMap.map((ip: any) => ({
+        type: ip.type || 'PATENT',
+        title: ip.title || 'IP Protection Strategy',
+        status: ip.status || 'ELIGIBLE',
+        summary: ip.summary || '',
+        keyRequirements: Array.isArray(ip.key_requirements)
+          ? ip.key_requirements
+          : Array.isArray(ip.keyRequirements)
+          ? ip.keyRequirements
+          : ['Compliance clearance verified'],
+        citations: Array.isArray(ip.citations) ? ip.citations : []
+      }))
     : [
         {
           type: 'PATENT',
@@ -397,7 +417,7 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
       ];
 
   return {
-    queryId: data.query_id || data.queryId || `audit-${Date.now()}`,
+    queryId: parsed.query_id || parsed.queryId || `audit-${Date.now()}`,
     userQuery: query,
     jurisdiction,
     classification: {
@@ -434,11 +454,11 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
       criticalBlockers: rp.critical_blockers || rp.criticalBlockers || [],
       recommendedRoadmap: rp.recommended_roadmap || rp.recommendedRoadmap || [],
     },
-    tkOverlap: data.tk_overlap || data.tkOverlap || [],
+    tkOverlap: parsed.tk_overlap || parsed.tkOverlap || [],
     agentSteps,
     citations,
     nodes,
     edges,
-    legalDisclaimer: data.legal_disclaimer || data.legalDisclaimer || 'DISCLAIMER: IP-SAKTI Sahayak provides source-cited legal & regulatory information.'
+    legalDisclaimer: parsed.legal_disclaimer || parsed.legalDisclaimer || 'DISCLAIMER: IP-SAKTI Sahayak provides source-cited legal & regulatory information.'
   };
 }

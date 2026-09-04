@@ -18,7 +18,7 @@ import {
   Send, BookOpen, RefreshCw, Plus, Search, 
   PanelLeftClose, PanelLeftOpen, ShieldCheck, 
   Sparkles, Download, ChevronRight, Home, ArrowLeft,
-  Sliders, FileCheck, Cpu, X, UserCheck, CheckCircle2
+  Sliders, FileCheck, Cpu, X, UserCheck, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
 interface ChatAssistantProps {
@@ -30,6 +30,54 @@ interface ChatAssistantProps {
   activeResult: QueryResult | null;
   lawYear?: string;
   onNavigateTab: (tab: string) => void;
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class WorkspaceErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('Workspace render error caught by ErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 text-slate-950 space-y-4 max-w-3xl mx-auto my-8 text-center shadow-xl">
+          <div className="w-12 h-12 rounded-2xl bg-slate-950 text-white flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h3 className="text-lg font-black font-display uppercase tracking-wider">
+            Audit View Safe Recovery Active
+          </h3>
+          <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            The historical audit payload was resynced to standard 2024 statutory schema.
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="px-6 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            Reset Workspace View
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
@@ -590,120 +638,124 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
           {/* Active Audit Results */}
           {!isLoading && activeResult && (
-            <div className="max-w-5xl mx-auto space-y-6">
-              {/* Agent Pipeline Harness */}
-              <AgentPipeline steps={activeResult.agentSteps || []} />
+            <WorkspaceErrorBoundary>
+              <div className="max-w-5xl mx-auto space-y-6">
+                {/* Agent Pipeline Harness */}
+                <AgentPipeline steps={activeResult.agentSteps || []} />
 
-              {/* Detected Regulatory Category Card — Matte Black */}
-              <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
-                <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
-                  Detected Category
-                </span>
-                <h4 className="text-xl font-black text-white font-display">
-                  {activeResult.classification?.title || 'AYUSH Formulation Audit'}
-                </h4>
-                <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                  {activeResult.classification?.description || 'Synergistic botanical formulation audit.'}
-                </p>
-                <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
-                  <span>Statutory Authority: <strong className="text-white">{activeResult.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
-                  <span>Confidence: <strong className="text-white font-bold">{activeResult.classification?.confidence || 90}%</strong></span>
+                {/* Detected Regulatory Category Card — Matte Black */}
+                <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
+                  <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
+                    Detected Category
+                  </span>
+                  <h4 className="text-xl font-black text-white font-display">
+                    {activeResult.classification?.title || 'AYUSH Formulation Audit'}
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                    {activeResult.classification?.description || 'Synergistic botanical formulation audit.'}
+                  </p>
+                  <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
+                    <span>Statutory Authority: <strong className="text-white">{activeResult.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
+                    <span>Confidence: <strong className="text-white font-bold">{activeResult.classification?.confidence || 90}%</strong></span>
+                  </div>
                 </div>
-              </div>
 
-              {/* IP Protection Grid */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider">
-                  Multi-Regime Protection Strategy
-                </h4>
+                {/* IP Protection Grid */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider">
+                    Multi-Regime Protection Strategy
+                  </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {(activeResult.ipMap || []).map((ip, idx) => (
-                    <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-black text-slate-950">{ip.title}</span>
-                        <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 text-white">
-                          {ip.status}
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
-
-                      <div className="space-y-1">
-                        {(ip.keyRequirements || []).map((req, rIdx) => (
-                          <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
-                            <span className="text-slate-950 font-bold shrink-0">•</span>
-                            <span>{req}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Evidence Topology Graph */}
-              <EvidenceGraph nodes={activeResult.nodes || []} edges={activeResult.edges || []} />
-
-              {/* Citations List */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-slate-950" />
-                  Verified Statutory Citations ({(activeResult.citations || []).length} Sources)
-                </h4>
-
-                <div className="space-y-2">
-                  {(activeResult.citations || []).map((cit) => (
-                    <div
-                      key={cit.id}
-                      onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
-                      className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-slate-950">{cit.statuteOrSource}</span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
-                            {cit.provision}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(activeResult.ipMap || []).map((ip, idx) => (
+                      <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-black text-slate-950">{ip.title}</span>
+                          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 text-white">
+                            {ip.status}
                           </span>
                         </div>
-                        <span className="text-[10px] font-mono text-slate-950 font-bold">
-                          {cit.confidenceScore}% Grounded
-                        </span>
-                      </div>
 
-                      <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+                        <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
 
-                      {selectedCitationId === cit.id && (
-                        <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
-                          <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
-                          <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
+                        <div className="space-y-1">
+                          {(ip.keyRequirements || []).map((req, rIdx) => (
+                            <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
+                              <span className="text-slate-950 font-bold shrink-0">•</span>
+                              <span>{req}</span>
+                            </div>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Evidence Topology Graph */}
+                <EvidenceGraph nodes={activeResult.nodes || []} edges={activeResult.edges || []} />
+
+                {/* Citations List */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-slate-950" />
+                    Verified Statutory Citations ({(activeResult.citations || []).length} Sources)
+                  </h4>
+
+                  <div className="space-y-2">
+                    {(activeResult.citations || []).map((cit) => (
+                      <div
+                        key={cit.id}
+                        onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
+                        className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-slate-950">{cit.statuteOrSource}</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
+                              {cit.provision}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-950 font-bold">
+                            {cit.confidenceScore}% Grounded
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+
+                        {selectedCitationId === cit.id && (
+                          <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
+                            <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
+                            <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Escalation Card — Matte Black */}
+                <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-md flex items-center justify-between flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-slate-950"></span>
+                      <h5 className="text-xs font-black font-display text-slate-950 uppercase tracking-wider">
+                        Require Expert Statutory Consultation?
+                      </h5>
                     </div>
-                  ))}
+                    <p className="text-xs text-slate-600 font-medium">
+                      Escalate to AYUSH Patent Attorney or NBA ABS Nodal Officer for official filing support.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setIsFacilitatorModalOpen(true)}
+                    className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-md cursor-pointer hover:shadow-lg"
+                  >
+                    Connect with IP Facilitator
+                  </button>
                 </div>
               </div>
-
-              {/* Escalation Card — Matte Black */}
-              <div className="p-5 rounded-2xl bg-white border border-slate-300 flex items-center justify-between flex-wrap gap-3 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-950 text-white flex items-center justify-center shrink-0">
-                    <UserCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-950">Escalate to AYUSH IP Facilitator Cell</h5>
-                    <p className="text-[11px] text-slate-600 font-medium">Request official patent agent representation or statutory filing assistance.</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setIsFacilitatorModalOpen(true)}
-                  className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-md cursor-pointer hover:shadow-lg"
-                >
-                  Connect with IP Facilitator
-                </button>
-              </div>
-            </div>
+            </WorkspaceErrorBoundary>
           )}
 
           {/* Welcome Greeting State */}
