@@ -18,7 +18,8 @@ import {
   Send, BookOpen, RefreshCw, Plus, Search, 
   PanelLeftClose, PanelLeftOpen, ShieldCheck, 
   Sparkles, Download, ChevronRight, Home, ArrowLeft,
-  Sliders, FileCheck, Cpu, X, UserCheck, CheckCircle2, AlertCircle
+  Sliders, FileCheck, Cpu, X, UserCheck, CheckCircle2, AlertCircle,
+  Pin, Share2, MessageSquare, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface ChatAssistantProps {
@@ -817,46 +818,46 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
                         <button
                           onClick={() => handleOpenToolForMessage('citations', msg.result)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="View Statutory Pins & Citations"
                         >
-                          <span>📌</span>
+                          <Pin className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                           <span>Pins ({msg.result.citations?.length || 0})</span>
                         </button>
 
                         <button
                           onClick={() => handleOpenToolForMessage('graph', msg.result)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="Open Interactive Topology Graph"
                         >
-                          <span>🕸️</span>
+                          <Share2 className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                           <span>Graph</span>
                         </button>
 
                         <button
                           onClick={() => handleOpenToolForMessage('architecture', msg.result)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="Inspect 4-Agent Reasoning Harness"
                         >
-                          <span>⚡</span>
+                          <Cpu className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                           <span>Harness</span>
                         </button>
 
                         <button
                           onClick={() => handleOpenToolForMessage('classifier', msg.result)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="View Regulatory Classification & IP Strategy"
                         >
-                          <span>🛡️</span>
+                          <ShieldCheck className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                           <span>IP Strategy</span>
                         </button>
 
                         <button
                           onClick={() => handleOpenToolForMessage('passport', msg.result)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
                           title="View 5-Pillar Scorecard & Passport"
                         >
-                          <span>📋</span>
+                          <FileCheck className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                           <span>Passport</span>
                         </button>
 
@@ -864,7 +865,17 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                           onClick={() => toggleInlineExpand(msg.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 text-white text-xs font-bold transition-all hover:bg-slate-800 cursor-pointer shadow-xs ml-auto"
                         >
-                          <span>{expandedMsgIds[msg.id] ? '☝️ Hide Workspace' : '👇 Full Workspace'}</span>
+                          {expandedMsgIds[msg.id] ? (
+                            <>
+                              <ChevronUp className="w-3.5 h-3.5 text-white" />
+                              <span>Hide Workspace</span>
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-3.5 h-3.5 text-white" />
+                              <span>Full Workspace</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     )}
@@ -882,9 +893,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                             setInputQuery(promptText);
                             handleQuerySubmit(promptText);
                           }}
-                          className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 text-[11px] font-bold transition-all border border-slate-300 cursor-pointer"
+                          className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 text-[11px] font-bold transition-all border border-slate-300 cursor-pointer flex items-center gap-1.5"
                         >
-                          💬 {promptText}
+                          <MessageSquare className="w-3 h-3 text-slate-600 shrink-0" />
+                          <span>{promptText}</span>
                         </button>
                       ))}
                     </div>
@@ -954,33 +966,37 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                               Verified Statutory Citations ({(msg.result.citations || []).length} Sources)
                             </h4>
 
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {(msg.result.citations || []).map((cit) => (
                                 <div
                                   key={cit.id}
                                   onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
-                                  className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
+                                  className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs space-y-2.5"
                                 >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-black text-slate-950">📌 {cit.statuteOrSource}</span>
-                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                    <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                                      <span className="text-xs font-black text-slate-950 flex items-center gap-1.5">
+                                        <span className="text-sm">📌</span>
+                                        <span>{cit.statuteOrSource}</span>
+                                      </span>
+                                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-100 font-bold text-slate-900 border border-slate-200 shrink-0">
                                         {cit.provision}
                                       </span>
                                     </div>
-                                    <span className="text-[10px] font-mono text-slate-950 font-bold">
+                                    <span className="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full bg-slate-950 text-white shrink-0 self-start sm:self-auto shadow-xs whitespace-nowrap">
                                       {cit.confidenceScore}% Grounded
                                     </span>
                                   </div>
 
-                                  <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+                                  <p className="text-xs text-slate-700 italic font-medium leading-relaxed border-l-2 border-slate-900 pl-3 py-0.5">
+                                    "{cit.excerpt}"
+                                  </p>
 
-                                  {selectedCitationId === cit.id && (
-                                    <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
-                                      <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
-                                      <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
-                                    </div>
-                                  )}
+                                  <div className="flex flex-wrap items-center gap-3 pt-1 text-[10px] text-slate-600 font-mono">
+                                    <span>Authority: <strong className="text-slate-950 font-bold">{cit.authorityLevel}</strong></span>
+                                    <span className="text-slate-300">•</span>
+                                    <span>Effective: <strong className="text-slate-950 font-bold">{cit.yearOrVersion}</strong></span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -1063,15 +1079,15 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
           {/* Drawer Header with Guidance & Close */}
           <div className="p-4 bg-white/90 backdrop-blur-xl flex items-center justify-between border-b border-slate-200 shrink-0 relative z-10">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 shrink-0 shadow-xs text-base">
-                {activeModalTool === 'classifier' && '🛡️'}
-                {activeModalTool === 'tkdl' && '📚'}
-                {activeModalTool === 'abs' && '🌿'}
-                {activeModalTool === 'whatif' && '🎛️'}
-                {activeModalTool === 'passport' && '📋'}
-                {activeModalTool === 'architecture' && '⚡'}
-                {activeModalTool === 'graph' && '🕸️'}
-                {activeModalTool === 'citations' && '📌'}
+              <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 shrink-0 shadow-xs">
+                {activeModalTool === 'classifier' && <ShieldCheck className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'tkdl' && <BookOpen className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'abs' && <ShieldCheck className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'whatif' && <Sliders className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'passport' && <FileCheck className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'architecture' && <Cpu className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'graph' && <Share2 className="w-5 h-5 text-slate-950" />}
+                {activeModalTool === 'citations' && <Pin className="w-5 h-5 text-slate-950" />}
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-black font-display text-slate-950 truncate">
@@ -1085,14 +1101,14 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   {activeModalTool === 'citations' && 'Verified Statutory Pins & Citations'}
                 </h3>
                 <p className="text-[11px] text-slate-600 font-medium truncate">
-                  {activeModalTool === 'classifier' && '💡 Categorize under SLA 25D, CDSCO, or FSSAI'}
-                  {activeModalTool === 'tkdl' && '💡 Review Section 3(p) prior art overlap'}
-                  {activeModalTool === 'abs' && '💡 Complete NBA Form III requirements'}
-                  {activeModalTool === 'whatif' && '💡 Adjust parameters to test score impact'}
-                  {activeModalTool === 'passport' && '💡 Review 5-pillar scorecards & export PDF'}
-                  {activeModalTool === 'architecture' && '💡 Inspect 4-Agent RAG pipeline traces'}
-                  {activeModalTool === 'graph' && '💡 Interactive GraphRAG evidence network'}
-                  {activeModalTool === 'citations' && '💡 Grounded statutory provisions & act sections'}
+                  {activeModalTool === 'classifier' && 'Categorize under SLA 25D, CDSCO, or FSSAI'}
+                  {activeModalTool === 'tkdl' && 'Review Section 3(p) prior art overlap'}
+                  {activeModalTool === 'abs' && 'Complete NBA Form III requirements'}
+                  {activeModalTool === 'whatif' && 'Adjust parameters to test score impact'}
+                  {activeModalTool === 'passport' && 'Review 5-pillar scorecards & export PDF'}
+                  {activeModalTool === 'architecture' && 'Inspect 4-Agent RAG pipeline traces'}
+                  {activeModalTool === 'graph' && 'Interactive GraphRAG evidence network'}
+                  {activeModalTool === 'citations' && 'Grounded statutory provisions & act sections'}
                 </p>
               </div>
             </div>
@@ -1137,31 +1153,44 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   )}
                   {activeModalTool === 'graph' && (
                     <div className="space-y-4">
-                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-                        🕸️ <strong>Evidence Topology Graph</strong>: Interactive legal & scientific entity relationship network.
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-slate-950 shrink-0" />
+                        <span><strong>Evidence Topology Graph</strong>: Interactive legal & scientific entity relationship network.</span>
                       </div>
                       <EvidenceGraph nodes={displayResult.nodes || []} edges={displayResult.edges || []} />
                     </div>
                   )}
                   {activeModalTool === 'citations' && (
                     <div className="space-y-3">
-                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-                        📌 <strong>Verified Statutory Pins & Legal Sources</strong>: Grounded excerpts with confidence ratings.
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 flex items-center gap-2">
+                        <Pin className="w-4 h-4 text-slate-950 shrink-0" />
+                        <span><strong>Verified Statutory Pins & Legal Sources</strong>: Grounded excerpts with confidence ratings.</span>
                       </div>
                       {(displayResult.citations || []).map((cit) => (
-                        <div key={cit.id} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-slate-950">📌 {cit.statuteOrSource}</span>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 font-bold text-slate-900 border border-slate-200">
+                        <div key={cit.id} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-2.5">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                              <span className="text-xs font-black text-slate-950 flex items-center gap-1.5">
+                                <Pin className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                                <span>{cit.statuteOrSource}</span>
+                              </span>
+                              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-100 font-bold text-slate-900 border border-slate-200 shrink-0">
                                 {cit.provision}
                               </span>
                             </div>
-                            <span className="text-[10px] font-mono font-bold text-slate-950">{cit.confidenceScore}% Grounded</span>
+                            <span className="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full bg-slate-950 text-white shrink-0 self-start sm:self-auto shadow-xs whitespace-nowrap">
+                              {cit.confidenceScore}% Grounded
+                            </span>
                           </div>
-                          <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
-                          <div className="text-[11px] text-slate-600 font-mono">
-                            Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong> | Effective: <strong className="text-slate-950">{cit.yearOrVersion}</strong>
+
+                          <p className="text-xs text-slate-700 italic font-medium leading-relaxed border-l-2 border-slate-900 pl-3 py-0.5">
+                            "{cit.excerpt}"
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-1 text-[10px] text-slate-600 font-mono">
+                            <span>Authority: <strong className="text-slate-950 font-bold">{cit.authorityLevel}</strong></span>
+                            <span className="text-slate-300">•</span>
+                            <span>Effective: <strong className="text-slate-950 font-bold">{cit.yearOrVersion}</strong></span>
                           </div>
                         </div>
                       ))}
