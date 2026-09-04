@@ -45,7 +45,8 @@ htmlcov/
 .ruff_cache/
 
 # Local Vector DB & Data Storage (re-generated via ingest script)
-data/
+/data/
+!src/data/
 backend/data/
 chroma_db/
 backend/chroma_db/

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { QueryResult, Jurisdiction, AuditHistoryItem } from '../types';
+import type { QueryResult, Jurisdiction, AuditHistoryItem, SampleQuery } from '../types';
 import { SAMPLE_QUERIES, getMockAnalysisForQuery } from '../data/mockData';
 import { analyzeQuery } from '../services/aiEngine';
 import { AgentPipeline } from './AgentPipeline';
@@ -694,7 +694,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
               {/* Sample Quick Action Chips */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-4">
-                {SAMPLE_QUERIES.map((sq) => (
+                {SAMPLE_QUERIES.map((sq: SampleQuery) => (
                   <button
                     key={sq.id}
                     onClick={() => {

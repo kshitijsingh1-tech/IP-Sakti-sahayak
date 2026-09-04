@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AntigravityLogo } from './AntigravityLogo';
 import { Layers, BookOpen, Network, ShieldCheck, ArrowRight, Cpu, ChevronRight, Activity, Search, Sparkles, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { SAMPLE_QUERIES } from '../data/mockData';
+import type { SampleQuery } from '../types';
 import { FileUploadTrigger, FileChipsList, type UploadedFile } from './FileUploadButton';
 
 interface LandingHeroProps {
@@ -268,7 +269,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {SAMPLE_QUERIES.map((sq) => (
+          {SAMPLE_QUERIES.map((sq: SampleQuery) => (
             <button
               key={sq.id}
               onClick={() => {

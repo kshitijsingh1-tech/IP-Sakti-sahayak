@@ -130,3 +130,10 @@ export interface AuditHistoryItem {
   result: QueryResult;
 }
 
+export interface SampleQuery {
+  id: string;
+  title: string;
+  category: string;
+  query: string;
+}
+
