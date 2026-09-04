@@ -293,7 +293,7 @@ export async function analyzeQuery(
   };
 }
 
-function mapBackendResponseToQueryResult(data: any, query: string, jurisdiction: Jurisdiction, lawYear: string): QueryResult {
+export function mapBackendResponseToQueryResult(data: any, query: string, jurisdiction: Jurisdiction, lawYear: string = '2024'): QueryResult {
   const rp = data.readiness_passport || {};
   const cl = data.classification || {};
 

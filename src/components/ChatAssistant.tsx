@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { QueryResult, Jurisdiction, AuditHistoryItem, SampleQuery } from '../types';
 import { SAMPLE_QUERIES, getMockAnalysisForQuery } from '../data/mockData';
-import { analyzeQuery } from '../services/aiEngine';
+import { analyzeQuery, mapBackendResponseToQueryResult } from '../services/aiEngine';
 import { AgentPipeline } from './AgentPipeline';
 import { EvidenceGraph } from './EvidenceGraph';
 import { AntigravityLogo } from './AntigravityLogo';
@@ -162,19 +162,28 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
   const handleSelectHistoryItem = async (item: AuditHistoryItem) => {
     setIsSidebarOpen(false); // Auto-collapse history column when item selected
-    if (item.result && item.result.classification) {
-      onAnalysisResult(item.result);
-    } else {
-      setIsLoading(true);
-      try {
-        const res = await analyzeQuery(item.query || item.title, jurisdiction, lawYear);
-        onAnalysisResult(res);
-      } catch (e) {
-        const mockRes = getMockAnalysisForQuery(item.query || item.title, jurisdiction);
-        onAnalysisResult(mockRes);
-      } finally {
-        setIsLoading(false);
+
+    try {
+      // 1. If item.result is already a valid camelCase QueryResult
+      if (item.result && item.result.classification && item.result.classification.category) {
+        onAnalysisResult(item.result);
+        return;
       }
+
+      // 2. If item.result is a raw SQLite JSON payload (snake_case query_id / classification)
+      if (item.result && (item.result as any).query_id) {
+        const mapped = mapBackendResponseToQueryResult(item.result as any, item.query || item.title, jurisdiction, lawYear);
+        onAnalysisResult(mapped);
+        return;
+      }
+
+      // 3. Fallback: generate mock analysis for item query
+      const mockRes = getMockAnalysisForQuery(item.query || item.title, jurisdiction);
+      onAnalysisResult(mockRes);
+    } catch (err) {
+      console.error('History item selection error:', err);
+      const fallback = getMockAnalysisForQuery(item.query || item.title, jurisdiction);
+      onAnalysisResult(fallback);
     }
   };
 
