@@ -19,7 +19,7 @@ import {
   PanelLeftClose, PanelLeftOpen, ShieldCheck, 
   Sparkles, Download, ChevronRight, Home, ArrowLeft,
   Sliders, FileCheck, Cpu, X, UserCheck, CheckCircle2, AlertCircle,
-  Pin, Share2, MessageSquare, ChevronDown, ChevronUp
+  Pin, Share2, MessageSquare, ChevronDown, ChevronUp, Wand2
 } from 'lucide-react';
 
 interface ChatAssistantProps {
@@ -108,6 +108,8 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchFilter, setSearchFilter] = useState('');
   const [activeModalTool, setActiveModalTool] = useState<'classifier' | 'tkdl' | 'abs' | 'whatif' | 'passport' | 'architecture' | 'graph' | 'citations' | null>(null);
+  const [isDockOpen, setIsDockOpen] = useState(false);
+  const [isSidebarToolsOpen, setIsSidebarToolsOpen] = useState(true);
   const [expandedMsgIds, setExpandedMsgIds] = useState<Record<string, boolean>>({});
 
   const toggleInlineExpand = (msgId: string) => {
@@ -511,11 +513,16 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
           {/* Navigation Shortlinks inside Sidebar */}
           <div className="pt-3 border-t border-slate-200">
-            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider font-bold block mb-2 px-1">
-              Product Navigation
-            </span>
+            <button
+              onClick={() => setIsSidebarToolsOpen(prev => !prev)}
+              className="w-full flex items-center justify-between text-[10px] font-mono text-slate-500 uppercase tracking-wider font-bold mb-2 px-1 hover:text-slate-950 transition-colors cursor-pointer"
+            >
+              <span>Product Navigation</span>
+              {isSidebarToolsOpen ? <ChevronUp className="w-3 h-3 text-slate-500" /> : <ChevronDown className="w-3 h-3 text-slate-500" />}
+            </button>
 
-            <div className="space-y-1.5 font-medium text-xs">
+            {isSidebarToolsOpen && (
+              <div className="space-y-1.5 font-medium text-xs animate-fade-in">
               <div 
                 onClick={() => handleOpenTool('classifier')} 
                 className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all relative overflow-hidden group ${
@@ -636,8 +643,9 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
             </div>
-          </div>
+          )}
         </div>
+      </div>
 
         {/* User Storage Badge Footer */}
         <div className="p-3 border-t border-slate-200 bg-white text-[11px] text-slate-700 flex items-center justify-between font-mono">
@@ -1089,6 +1097,129 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Floating Rolling Tool Dock (Fixed Overlay FAB & Dock) */}
+        <div className="fixed bottom-22 right-6 z-40 flex items-center gap-2">
+          {/* Expanded Roll-Out Pill Dock */}
+          <div
+            className={`flex items-center gap-1.5 p-1.5 rounded-full bg-slate-950/95 backdrop-blur-xl border border-slate-800 text-white shadow-2xl transition-all duration-300 transform origin-right ${
+              isDockOpen
+                ? 'opacity-100 scale-100 translate-x-0 max-w-3xl'
+                : 'opacity-0 scale-90 translate-x-8 max-w-0 overflow-hidden pointer-events-none'
+            }`}
+          >
+            <button
+              onClick={() => {
+                handleOpenTool('classifier');
+                setIsDockOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeModalTool === 'classifier'
+                  ? 'bg-white text-slate-950 shadow-md'
+                  : 'hover:bg-slate-800 text-slate-200'
+              }`}
+              title="Product Classifier"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-slate-300" />
+              <span>Classifier</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleOpenTool('tkdl');
+                setIsDockOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeModalTool === 'tkdl'
+                  ? 'bg-white text-slate-950 shadow-md'
+                  : 'hover:bg-slate-800 text-slate-200'
+              }`}
+              title="TKDL Overlap Radar"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-slate-300" />
+              <span>TKDL Radar</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleOpenTool('abs');
+                setIsDockOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeModalTool === 'abs'
+                  ? 'bg-white text-slate-950 shadow-md'
+                  : 'hover:bg-slate-800 text-slate-200'
+              }`}
+              title="ABS Biodiversity Checker"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-300" />
+              <span>ABS Checker</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleOpenTool('whatif');
+                setIsDockOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeModalTool === 'whatif'
+                  ? 'bg-white text-slate-950 shadow-md'
+                  : 'hover:bg-slate-800 text-slate-200'
+              }`}
+              title="What-If Simulator"
+            >
+              <Sliders className="w-3.5 h-3.5 text-slate-300" />
+              <span>What-If</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleOpenTool('passport');
+                setIsDockOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeModalTool === 'passport'
+                  ? 'bg-white text-slate-950 shadow-md'
+                  : 'hover:bg-slate-800 text-slate-200'
+              }`}
+              title="IP Readiness Passport"
+            >
+              <FileCheck className="w-3.5 h-3.5 text-slate-300" />
+              <span>Passport</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleOpenTool('architecture');
+                setIsDockOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeModalTool === 'architecture'
+                  ? 'bg-white text-slate-950 shadow-md'
+                  : 'hover:bg-slate-800 text-slate-200'
+              }`}
+              title="4-Agent Architecture Blueprint"
+            >
+              <Cpu className="w-3.5 h-3.5 text-slate-300" />
+              <span>Blueprint</span>
+            </button>
+          </div>
+
+          {/* Main Rolling Trigger FAB Button */}
+          <button
+            onClick={() => setIsDockOpen(prev => !prev)}
+            className={`p-3.5 rounded-full bg-slate-950 text-white shadow-2xl border border-slate-800 transition-all duration-300 cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center group ${
+              isDockOpen ? 'bg-slate-900 ring-2 ring-slate-400 rotate-90' : 'hover:bg-slate-900'
+            }`}
+            title={isDockOpen ? 'Roll in Audit Tools' : 'Roll out Audit Tools'}
+          >
+            {isDockOpen ? (
+              <X className="w-5 h-5 text-white transition-transform" />
+            ) : (
+              <Wand2 className="w-5 h-5 text-white group-hover:rotate-12 transition-transform" />
+            )}
+          </button>
         </div>
       </div>
 
