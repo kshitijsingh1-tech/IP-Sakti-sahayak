@@ -25,13 +25,13 @@ export const AgentPipeline: React.FC<AgentPipelineProps> = ({ steps }) => {
     return () => clearInterval(interval);
   }, [steps]);
 
-  const getAgentIcon = (agent: AgentStep['agent']) => {
-    switch (agent) {
-      case 'RESEARCHER': return Search;
-      case 'AUDITOR': return ShieldCheck;
-      case 'DEVILS_ADVOCATE': return AlertTriangle;
-      case 'STRATEGIST': return Target;
-    }
+  const getAgentIcon = (agent: string) => {
+    const norm = (agent || '').toUpperCase();
+    if (norm.includes('RESEARCH')) return Search;
+    if (norm.includes('AUDIT')) return ShieldCheck;
+    if (norm.includes('DEVIL') || norm.includes('RISK')) return AlertTriangle;
+    if (norm.includes('STRATEG')) return Target;
+    return Cpu;
   };
 
   const getAgentCardStyle = (isRunning: boolean, isDone: boolean) => {

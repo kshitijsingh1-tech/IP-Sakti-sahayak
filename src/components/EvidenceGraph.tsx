@@ -12,13 +12,15 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || nodes[0];
 
-  const getNodeColor = (type: EvidenceNode['type']) => {
-    switch (type) {
+  const getNodeColor = (type: string) => {
+    const norm = (type || '').toUpperCase();
+    switch (norm) {
       case 'QUERY': return { bg: '#e0e7ff', border: '#4338ca', text: '#312e81', glow: 'rgba(67, 56, 202, 0.3)' };
       case 'ENTITY': return { bg: '#ccfbf1', border: '#0f766e', text: '#134e4a', glow: 'rgba(15, 118, 110, 0.3)' };
       case 'TK_RECORD': return { bg: '#fef3c7', border: '#b45309', text: '#78350f', glow: 'rgba(180, 83, 9, 0.3)' };
       case 'STATUTE': return { bg: '#f3e8ff', border: '#7e22ce', text: '#581c87', glow: 'rgba(126, 34, 206, 0.3)' };
       case 'VERDICT': return { bg: '#dcfce7', border: '#15803d', text: '#14532d', glow: 'rgba(21, 128, 61, 0.3)' };
+      default: return { bg: '#f1f5f9', border: '#64748b', text: '#0f172a', glow: 'rgba(100, 116, 139, 0.3)' };
     }
   };
 
