@@ -1,8 +1,7 @@
 import React from 'react';
 import type { Jurisdiction } from '../types';
-import { TRANSLATIONS } from '../data/translations';
 import { AntigravityLogo } from './AntigravityLogo';
-import { Sparkles, Globe, Layers, BookOpen, Shield, Network, Home, Cpu, Rocket } from 'lucide-react';
+import { Sparkles, Home, Rocket } from 'lucide-react';
 
 interface HeaderProps {
   jurisdiction: Jurisdiction;
@@ -23,7 +22,6 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.en;
 
   return (
     <header className="sticky top-0 z-50 px-2 sm:px-4 pt-3 pb-2 transition-all">
@@ -46,104 +44,32 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center Pill Navigation Bar — Scrollable & Compact */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-full border border-slate-200 text-xs font-semibold overflow-x-auto no-scrollbar max-w-full">
+        {/* Minimal Uncluttered Top Bar */}
+        <div className="hidden md:flex items-center gap-2">
           <button
             onClick={() => onTabChange('hero')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+            className={`px-4 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 text-xs ${
               activeTab === 'hero'
                 ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
+                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
             }`}
           >
             <Home className="w-3.5 h-3.5" />
-            <span>{t.home}</span>
+            <span>Home</span>
           </button>
-
+          
           <button
             onClick={() => onTabChange('assistant')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+            className={`px-4 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 text-xs ${
               activeTab === 'assistant'
                 ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
+                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Assistant</span>
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span>AI Reasoning Workspace</span>
           </button>
-
-          <button
-            onClick={() => onTabChange('classifier')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'classifier'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Classifier</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('tkdl')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'tkdl'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>TKDL Radar</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('abs')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'abs'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>ABS Duty</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('whatif')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'whatif'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
-            }`}
-          >
-            <Network className="w-3.5 h-3.5" />
-            <span>Simulator</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('passport')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'passport'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>Passport</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('architecture')}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'architecture'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>Architecture</span>
-          </button>
-        </nav>
+        </div>
 
         {/* Right Tools Controls — Larger Fonts & Clear Touch Targets */}
         <div className="flex items-center gap-2 text-xs shrink-0">

@@ -14,6 +14,7 @@ Usage:
 """
 from __future__ import annotations
 import os
+import asyncio
 import logging
 from typing import Optional
 
@@ -122,7 +123,7 @@ class DirectGroqLLM:
             payload_messages.append({"role": role, "content": content})
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            for attempt in range(3):
+            for attempt in range(4):
                 try:
                     resp = await client.post(
                         url,
@@ -138,9 +139,10 @@ class DirectGroqLLM:
                             "temperature": 0.1
                         }
                     )
-                    if resp.status_code == 429 and attempt < 2:
-                        logger.warning("Groq rate limit 429 hit. Retrying in 1.5s (attempt %d)...", attempt + 1)
-                        await asyncio.sleep(1.5)
+                    if resp.status_code == 429 and attempt < 3:
+                        wait_sec = 1.5 * (attempt + 1)
+                        logger.warning("Groq rate limit 429 hit. Retrying in %.1fs (attempt %d)...", wait_sec, attempt + 1)
+                        await asyncio.sleep(wait_sec)
                         continue
                     resp.raise_for_status()
                     data = resp.json()
@@ -151,8 +153,9 @@ class DirectGroqLLM:
                             self.content = text
                     return LLMResponse(content)
                 except httpx.HTTPStatusError as err:
-                    if err.response.status_code == 429 and attempt < 2:
-                        await asyncio.sleep(1.5)
+                    if err.response.status_code == 429 and attempt < 3:
+                        wait_sec = 1.5 * (attempt + 1)
+                        await asyncio.sleep(wait_sec)
                         continue
                     raise err
 
@@ -219,7 +222,7 @@ async def chat(llm, system: str, user: str, context: str = "") -> str:
         return response.content
     except Exception as e:
         logger.error("LLM chat failed: %s", e)
-        return f"[LLM unavailable: {e}]"
+        return ""
 
 
 # ---------------------------------------------------------------------------

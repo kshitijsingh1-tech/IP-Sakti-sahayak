@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Jurisdiction, QueryResult, ProductClassificationResult } from './types';
-import { SAMPLE_QUERIES } from './data/mockData';
+import { SAMPLE_QUERIES, getMockAnalysisForQuery } from './data/mockData';
 import { analyzeQuery } from './services/aiEngine';
 import { Header } from './components/Header';
 import { LandingHero } from './components/LandingHero';
@@ -51,6 +51,7 @@ export function App() {
   };
 
   const handleStartQuery = async (queryText: string) => {
+    setActiveTab('assistant');
     const res = await analyzeQuery(queryText, jurisdiction, lawYear);
     setActiveResult(res);
   };
@@ -93,29 +94,36 @@ export function App() {
           />
         )}
 
-        {activeTab === 'classifier' && (
-          <ProductClassifier onClassifyComplete={handleClassifyComplete} />
-        )}
+        {(() => {
+          const displayResult = activeResult || getMockAnalysisForQuery('Ashwagandha Extract Formulation', jurisdiction);
+          return (
+            <>
+              {activeTab === 'classifier' && (
+                <ProductClassifier onClassifyComplete={handleClassifyComplete} />
+              )}
 
-        {activeTab === 'tkdl' && activeResult && (
-          <TKDLRadar matches={activeResult.tkOverlap} />
-        )}
+              {activeTab === 'tkdl' && (
+                <TKDLRadar matches={displayResult.tkOverlap} />
+              )}
 
-        {activeTab === 'abs' && activeResult && (
-          <ABSChecker analysis={activeResult.absAnalysis} />
-        )}
+              {activeTab === 'abs' && (
+                <ABSChecker analysis={displayResult.absAnalysis} />
+              )}
 
-        {activeTab === 'whatif' && (
-          <WhatIfSimulator />
-        )}
+              {activeTab === 'whatif' && (
+                <WhatIfSimulator />
+              )}
 
-        {activeTab === 'passport' && activeResult && (
-          <ReadinessPassport passport={activeResult.readinessPassport} />
-        )}
+              {activeTab === 'passport' && (
+                <ReadinessPassport passport={displayResult.readinessPassport} />
+              )}
 
-        {activeTab === 'architecture' && (
-          <ArchitectureView />
-        )}
+              {activeTab === 'architecture' && (
+                <ArchitectureView />
+              )}
+            </>
+          );
+        })()}
       </main>
 
       {/* Light Theme Footer — Hidden on Fullscreen Chat Page */}

@@ -138,7 +138,11 @@ async def upload_documents(
     Supported formats: .pdf .ppt .pptx .doc .docx .txt .csv .jpg .jpeg .png .webp .gif
     Max file size: 25 MB per file (configurable via MAX_UPLOAD_SIZE_MB in .env)
     """
-    from services.document_processor import extract_text, build_document_context, SUPPORTED_EXTENSIONS
+    try:
+        from backend.services.document_processor import extract_text, build_document_context, SUPPORTED_EXTENSIONS
+    except ImportError:
+        from services.document_processor import extract_text, build_document_context, SUPPORTED_EXTENSIONS
+
     from pathlib import Path
 
     max_mb = int(os.getenv("MAX_UPLOAD_SIZE_MB", 25))
@@ -211,26 +215,64 @@ async def run_audit(request: AuditRequest):
     start = time.time()
 
     try:
-        # Import inline to avoid circular deps — replace with actual RAG service
-        from services.rag_pipeline import run_4_agent_pipeline
+        try:
+            from backend.services.rag_pipeline import run_4_agent_pipeline
+        except ImportError:
+            from services.rag_pipeline import run_4_agent_pipeline
+
         result = await run_4_agent_pipeline(
             query=request.query,
             jurisdiction=request.jurisdiction,
             law_year=request.law_year,
             language=request.language,
         )
-    except ImportError:
-        # Stub response when RAG service is not yet wired
-        raise HTTPException(
-            status_code=501,
-            detail="RAG pipeline service not yet configured. Please set up services/rag_pipeline.py and configure .env"
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
     elapsed_ms = int((time.time() - start) * 1000)
     result["processing_time_ms"] = elapsed_ms
+
+    # Automatically save audit session to SQLite history DB
+    try:
+        try:
+            from backend.services.history_db import save_audit_session
+        except ImportError:
+            from services.history_db import save_audit_session
+        save_audit_session(result)
+    except Exception as exc:
+        pass
+
     return result
+
+
+# ---------------------------------------------------------------------------
+# Audit Session History Endpoints (SQLite Persistent DB)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/v1/history", tags=["History"])
+async def get_history(limit: int = 50):
+    """Retrieves all past audit sessions from the persistent SQLite database."""
+    try:
+        from backend.services.history_db import get_all_audit_sessions
+    except ImportError:
+        from services.history_db import get_all_audit_sessions
+
+    return {
+        "status": "ok",
+        "sessions": get_all_audit_sessions(limit=limit)
+    }
+
+
+@app.delete("/api/v1/history", tags=["History"])
+async def delete_history():
+    """Clears all audit session history from SQLite database."""
+    try:
+        from backend.services.history_db import clear_audit_history
+    except ImportError:
+        from services.history_db import clear_audit_history
+
+    success = clear_audit_history()
+    return {"status": "ok", "cleared": success}
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +376,58 @@ async def corpus_status():
         return {"status": "unavailable", "error": "chromadb package not installed in environment", "hint": "Run: pip install -r requirements.txt && python scripts/ingest_corpus.py"}
     except Exception as e:
         return {"status": "unavailable", "error": str(e), "hint": "Run: python scripts/ingest_corpus.py"}
+
+
+# ---------------------------------------------------------------------------
+# Static Frontend Serving (For Railway Single-Container Production Deploy)
+# ---------------------------------------------------------------------------
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+dist_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dist")
+if not os.path.exists(dist_path):
+    dist_path = "dist"
+
+if os.path.exists(dist_path):
+    assets_dir = os.path.join(dist_path, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        target_file = os.path.join(dist_path, full_path)
+        if os.path.exists(target_file) and os.path.isfile(target_file):
+            return FileResponse(target_file)
+        return FileResponse(os.path.join(dist_path, "index.html"))
+
+
+# ---------------------------------------------------------------------------
+# Static Frontend Serving (For Railway Single-Container Production Deploy)
+# ---------------------------------------------------------------------------
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+dist_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dist")
+if not os.path.exists(dist_path):
+    dist_path = "dist"
+
+if os.path.exists(dist_path):
+    assets_dir = os.path.join(dist_path, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        target_file = os.path.join(dist_path, full_path)
+        if os.path.exists(target_file) and os.path.isfile(target_file):
+            return FileResponse(target_file)
+        return FileResponse(os.path.join(dist_path, "index.html"))
 
 
 # ---------------------------------------------------------------------------

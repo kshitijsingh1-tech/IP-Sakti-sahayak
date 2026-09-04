@@ -151,12 +151,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1 */}
           <div
-            onClick={() => onNavigateTab('classifier')}
+            onClick={() => onNavigateTab('assistant')}
             className="p-6 rounded-3xl bg-white border border-slate-200 cursor-pointer group flex flex-col justify-between hover:border-slate-400 transition-all shadow-xs"
           >
             <div>
               <div className="w-10 h-10 rounded-2xl bg-slate-950 flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-xs">
-                <Layers className="w-5 h-5" />
+                <Layers className="w-5 h-5 text-blue-400" />
               </div>
               <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider">
                 Product Classifier
@@ -176,12 +176,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
 
           {/* Card 2 */}
           <div
-            onClick={() => onNavigateTab('tkdl')}
+            onClick={() => onNavigateTab('assistant')}
             className="p-6 rounded-3xl bg-white border border-slate-200 cursor-pointer group flex flex-col justify-between hover:border-slate-400 transition-all shadow-xs"
           >
             <div>
               <div className="w-10 h-10 rounded-2xl bg-slate-950 flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-xs">
-                <BookOpen className="w-5 h-5" />
+                <BookOpen className="w-5 h-5 text-emerald-400" />
               </div>
               <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider">
                 TKDL Radar
@@ -201,12 +201,12 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
 
           {/* Card 3 */}
           <div
-            onClick={() => onNavigateTab('abs')}
+            onClick={() => onNavigateTab('assistant')}
             className="p-6 rounded-3xl bg-white border border-slate-200 cursor-pointer group flex flex-col justify-between hover:border-slate-400 transition-all shadow-xs"
           >
             <div>
               <div className="w-10 h-10 rounded-2xl bg-slate-950 flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-xs">
-                <ShieldCheck className="w-5 h-5" />
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
               </div>
               <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider">
                 ABS Checker
@@ -226,7 +226,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
 
           {/* Card 4 */}
           <div
-            onClick={() => onNavigateTab('whatif')}
+            onClick={() => onNavigateTab('assistant')}
             className="p-6 rounded-3xl bg-white border border-slate-200 cursor-pointer group flex flex-col justify-between hover:border-slate-400 transition-all shadow-xs"
           >
             <div>
