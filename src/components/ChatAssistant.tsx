@@ -106,7 +106,20 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const [selectedCitationId, setSelectedCitationId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchFilter, setSearchFilter] = useState('');
-  const [activeModalTool, setActiveModalTool] = useState<'classifier' | 'tkdl' | 'abs' | 'whatif' | 'passport' | 'architecture' | null>(null);
+  const [activeModalTool, setActiveModalTool] = useState<'classifier' | 'tkdl' | 'abs' | 'whatif' | 'passport' | 'architecture' | 'graph' | 'citations' | null>(null);
+  const [expandedMsgIds, setExpandedMsgIds] = useState<Record<string, boolean>>({});
+
+  const toggleInlineExpand = (msgId: string) => {
+    setExpandedMsgIds(prev => ({ ...prev, [msgId]: !prev[msgId] }));
+  };
+
+  const handleOpenToolForMessage = (tool: 'classifier' | 'tkdl' | 'abs' | 'whatif' | 'passport' | 'architecture' | 'graph' | 'citations', result?: QueryResult) => {
+    if (result) {
+      onAnalysisResult(result);
+    }
+    setActiveModalTool(prev => (prev === tool ? null : tool));
+    setIsSidebarOpen(false);
+  };
   const [isFacilitatorModalOpen, setIsFacilitatorModalOpen] = useState(false);
   const [facilitatorFormSubmitted, setFacilitatorFormSubmitted] = useState(false);
 
@@ -780,125 +793,202 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                     </div>
                   </div>
 
-                  {/* Assistant Result Cards Block */}
-                  {msg.result && (
-                    <WorkspaceErrorBoundary>
-                      <div className="space-y-6 pl-0 sm:pl-11">
-                        {/* Agent Pipeline Harness */}
-                        <AgentPipeline steps={msg.result.agentSteps || []} />
+                  {/* Assistant Speech Card & Conversational Response */}
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-md space-y-4 font-sans ml-0 sm:ml-11">
+                    <p className="text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
+                      {msg.text}
+                    </p>
 
-                        {/* Detected Regulatory Category Card */}
-                        <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
-                          <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
-                            Detected Category
+                    {/* Brief Statutory Summary pill */}
+                    {msg.result && (
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1 font-medium">
+                        <div className="flex items-center justify-between text-slate-950 font-bold">
+                          <span>{msg.result.classification?.title || 'AYUSH Statutory Audit'}</span>
+                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-950 text-white font-bold">
+                            Score: {msg.result.readinessPassport?.overallScore || 78}%
                           </span>
-                          <h4 className="text-xl font-black text-white font-display">
-                            {msg.result.classification?.title || 'AYUSH Formulation Audit'}
-                          </h4>
-                          <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                            {msg.result.classification?.description || 'Synergistic botanical formulation audit.'}
-                          </p>
-                          <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
-                            <span>Statutory Authority: <strong className="text-white">{msg.result.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
-                            <span>Confidence: <strong className="text-white font-bold">{msg.result.classification?.confidence || 90}%</strong></span>
-                          </div>
                         </div>
+                        <p className="text-slate-600 text-[11px] leading-normal">{msg.result.classification?.description}</p>
+                      </div>
+                    )}
 
-                        {/* IP Protection Grid */}
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider">
-                            Multi-Regime Protection Strategy
-                          </h4>
+                    {/* Short Interactive Action Icons Row */}
+                    {msg.result && (
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          onClick={() => handleOpenToolForMessage('citations', msg.result)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          title="View Statutory Pins & Citations"
+                        >
+                          <span>📌</span>
+                          <span>Pins ({msg.result.citations?.length || 0})</span>
+                        </button>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {(msg.result.ipMap || []).map((ip, idx) => (
-                              <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs font-black text-slate-950">{ip.title}</span>
-                                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 text-white">
-                                    {ip.status}
-                                  </span>
-                                </div>
+                        <button
+                          onClick={() => handleOpenToolForMessage('graph', msg.result)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          title="Open Interactive Topology Graph"
+                        >
+                          <span>🕸️</span>
+                          <span>Graph</span>
+                        </button>
 
-                                <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
+                        <button
+                          onClick={() => handleOpenToolForMessage('architecture', msg.result)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          title="Inspect 4-Agent Reasoning Harness"
+                        >
+                          <span>⚡</span>
+                          <span>Harness</span>
+                        </button>
 
-                                <div className="space-y-1">
-                                  {(ip.keyRequirements || []).map((req, rIdx) => (
-                                    <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
-                                      <span className="text-slate-950 font-bold shrink-0">•</span>
-                                      <span>{req}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
+                        <button
+                          onClick={() => handleOpenToolForMessage('classifier', msg.result)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          title="View Regulatory Classification & IP Strategy"
+                        >
+                          <span>🛡️</span>
+                          <span>IP Strategy</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenToolForMessage('passport', msg.result)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs"
+                          title="View 5-Pillar Scorecard & Passport"
+                        >
+                          <span>📋</span>
+                          <span>Passport</span>
+                        </button>
+
+                        <button
+                          onClick={() => toggleInlineExpand(msg.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 text-white text-xs font-bold transition-all hover:bg-slate-800 cursor-pointer shadow-xs ml-auto"
+                        >
+                          <span>{expandedMsgIds[msg.id] ? '☝️ Hide Workspace' : '👇 Full Workspace'}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Follow-up Suggested Quick Re-Chat Chips */}
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {[
+                        'What about Section 3(d) efficacy data requirement?',
+                        'How to submit NBA Form III under BD Act 2023?',
+                        'Check PCT export clearance for USA & WIPO'
+                      ].map((promptText, pIdx) => (
+                        <button
+                          key={pIdx}
+                          onClick={() => {
+                            setInputQuery(promptText);
+                            handleQuerySubmit(promptText);
+                          }}
+                          className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 text-[11px] font-bold transition-all border border-slate-300 cursor-pointer"
+                        >
+                          💬 {promptText}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Optional Expanded Inline Workspace View */}
+                    {msg.result && expandedMsgIds[msg.id] && (
+                      <WorkspaceErrorBoundary>
+                        <div className="space-y-6 pt-4 border-t border-slate-200">
+                          {/* Agent Pipeline Harness */}
+                          <AgentPipeline steps={msg.result.agentSteps || []} />
+
+                          {/* Detected Regulatory Category Card */}
+                          <div className="p-6 rounded-3xl bg-slate-950 text-white border border-slate-900 shadow-xl space-y-2 relative overflow-hidden">
+                            <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
+                              Detected Category
+                            </span>
+                            <h4 className="text-xl font-black text-white font-display">
+                              {msg.result.classification?.title || 'AYUSH Formulation Audit'}
+                            </h4>
+                            <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                              {msg.result.classification?.description || 'Synergistic botanical formulation audit.'}
+                            </p>
+                            <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-400 font-mono">
+                              <span>Statutory Authority: <strong className="text-white">{msg.result.classification?.regulatoryBody || 'Ministry of Ayush'}</strong></span>
+                              <span>Confidence: <strong className="text-white font-bold">{msg.result.classification?.confidence || 90}%</strong></span>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Evidence Topology Graph */}
-                        <EvidenceGraph nodes={msg.result.nodes || []} edges={msg.result.edges || []} />
+                          {/* IP Protection Grid */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider">
+                              Multi-Regime Protection Strategy
+                            </h4>
 
-                        {/* Citations List */}
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-slate-950" />
-                            Verified Statutory Citations ({(msg.result.citations || []).length} Sources)
-                          </h4>
-
-                          <div className="space-y-2">
-                            {(msg.result.citations || []).map((cit) => (
-                              <div
-                                key={cit.id}
-                                onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
-                                className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-black text-slate-950">{cit.statuteOrSource}</span>
-                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
-                                      {cit.provision}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {(msg.result.ipMap || []).map((ip, idx) => (
+                                <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-400 transition-all shadow-xs">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-black text-slate-950">{ip.title}</span>
+                                    <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 text-white">
+                                      {ip.status}
                                     </span>
                                   </div>
-                                  <span className="text-[10px] font-mono text-slate-950 font-bold">
-                                    {cit.confidenceScore}% Grounded
-                                  </span>
-                                </div>
 
-                                <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+                                  <p className="text-xs text-slate-700 font-medium mb-3">{ip.summary}</p>
 
-                                {selectedCitationId === cit.id && (
-                                  <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
-                                    <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
-                                    <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
+                                  <div className="space-y-1">
+                                    {(ip.keyRequirements || []).map((req, rIdx) => (
+                                      <div key={rIdx} className="text-[11px] text-slate-800 flex items-start gap-1.5 font-medium">
+                                        <span className="text-slate-950 font-bold shrink-0">•</span>
+                                        <span>{req}</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                )}
-                              </div>
-                            ))}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Evidence Topology Graph */}
+                          <EvidenceGraph nodes={msg.result.nodes || []} edges={msg.result.edges || []} />
+
+                          {/* Citations List */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold font-display text-slate-950 uppercase tracking-wider flex items-center gap-2">
+                              <BookOpen className="w-4 h-4 text-slate-950" />
+                              Verified Statutory Citations ({(msg.result.citations || []).length} Sources)
+                            </h4>
+
+                            <div className="space-y-2">
+                              {(msg.result.citations || []).map((cit) => (
+                                <div
+                                  key={cit.id}
+                                  onClick={() => setSelectedCitationId(selectedCitationId === cit.id ? null : cit.id)}
+                                  className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 cursor-pointer transition-all shadow-xs"
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-slate-950">📌 {cit.statuteOrSource}</span>
+                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 font-bold">
+                                        {cit.provision}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-slate-950 font-bold">
+                                      {cit.confidenceScore}% Grounded
+                                    </span>
+                                  </div>
+
+                                  <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+
+                                  {selectedCitationId === cit.id && (
+                                    <div className="mt-3 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-1 font-medium">
+                                      <p>Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong></p>
+                                      <p>Effective Date: <strong className="text-slate-950">{cit.yearOrVersion}</strong></p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-
-                        {/* Follow-up Suggested Quick Prompts */}
-                        <div className="pt-2 flex flex-wrap gap-2">
-                          {[
-                            'What about Section 3(d) efficacy data requirement?',
-                            'How to submit NBA Form III under BD Act 2023?',
-                            'Check PCT export clearance for USA & WIPO'
-                          ].map((promptText, pIdx) => (
-                            <button
-                              key={pIdx}
-                              onClick={() => {
-                                setInputQuery(promptText);
-                                handleQuerySubmit(promptText);
-                              }}
-                              className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-bold transition-all border border-slate-300 cursor-pointer"
-                            >
-                              💡 {promptText}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </WorkspaceErrorBoundary>
-                  )}
+                      </WorkspaceErrorBoundary>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -973,22 +1063,26 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
           {/* Drawer Header with Guidance & Close */}
           <div className="p-4 bg-white/90 backdrop-blur-xl flex items-center justify-between border-b border-slate-200 shrink-0 relative z-10">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 shrink-0 shadow-xs">
-                {activeModalTool === 'classifier' && <Sparkles className="w-5 h-5 text-slate-950" />}
-                {activeModalTool === 'tkdl' && <BookOpen className="w-5 h-5 text-slate-950" />}
-                {activeModalTool === 'abs' && <ShieldCheck className="w-5 h-5 text-slate-950" />}
-                {activeModalTool === 'whatif' && <Sliders className="w-5 h-5 text-slate-950" />}
-                {activeModalTool === 'passport' && <FileCheck className="w-5 h-5 text-slate-950" />}
-                {activeModalTool === 'architecture' && <Cpu className="w-5 h-5 text-slate-950" />}
+              <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 shrink-0 shadow-xs text-base">
+                {activeModalTool === 'classifier' && '🛡️'}
+                {activeModalTool === 'tkdl' && '📚'}
+                {activeModalTool === 'abs' && '🌿'}
+                {activeModalTool === 'whatif' && '🎛️'}
+                {activeModalTool === 'passport' && '📋'}
+                {activeModalTool === 'architecture' && '⚡'}
+                {activeModalTool === 'graph' && '🕸️'}
+                {activeModalTool === 'citations' && '📌'}
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-black font-display text-slate-950 truncate">
-                  {activeModalTool === 'classifier' && 'Regulatory Classifier'}
+                  {activeModalTool === 'classifier' && 'Regulatory Classifier & Strategy'}
                   {activeModalTool === 'tkdl' && 'TKDL Prior-Art Radar'}
                   {activeModalTool === 'abs' && 'ABS Duty Checker'}
                   {activeModalTool === 'whatif' && 'What-If Simulator'}
                   {activeModalTool === 'passport' && 'Readiness Passport'}
-                  {activeModalTool === 'architecture' && 'Architecture Inspector'}
+                  {activeModalTool === 'architecture' && '4-Agent Architecture Harness'}
+                  {activeModalTool === 'graph' && 'Evidence Topology Graph'}
+                  {activeModalTool === 'citations' && 'Verified Statutory Pins & Citations'}
                 </h3>
                 <p className="text-[11px] text-slate-600 font-medium truncate">
                   {activeModalTool === 'classifier' && '💡 Categorize under SLA 25D, CDSCO, or FSSAI'}
@@ -997,6 +1091,8 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   {activeModalTool === 'whatif' && '💡 Adjust parameters to test score impact'}
                   {activeModalTool === 'passport' && '💡 Review 5-pillar scorecards & export PDF'}
                   {activeModalTool === 'architecture' && '💡 Inspect 4-Agent RAG pipeline traces'}
+                  {activeModalTool === 'graph' && '💡 Interactive GraphRAG evidence network'}
+                  {activeModalTool === 'citations' && '💡 Grounded statutory provisions & act sections'}
                 </p>
               </div>
             </div>
@@ -1038,6 +1134,38 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   )}
                   {activeModalTool === 'architecture' && (
                     <ArchitectureView />
+                  )}
+                  {activeModalTool === 'graph' && (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
+                        🕸️ <strong>Evidence Topology Graph</strong>: Interactive legal & scientific entity relationship network.
+                      </div>
+                      <EvidenceGraph nodes={displayResult.nodes || []} edges={displayResult.edges || []} />
+                    </div>
+                  )}
+                  {activeModalTool === 'citations' && (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
+                        📌 <strong>Verified Statutory Pins & Legal Sources</strong>: Grounded excerpts with confidence ratings.
+                      </div>
+                      {(displayResult.citations || []).map((cit) => (
+                        <div key={cit.id} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-950">📌 {cit.statuteOrSource}</span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 font-bold text-slate-900 border border-slate-200">
+                                {cit.provision}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-slate-950">{cit.confidenceScore}% Grounded</span>
+                          </div>
+                          <p className="text-xs text-slate-800 italic font-medium">"{cit.excerpt}"</p>
+                          <div className="text-[11px] text-slate-600 font-mono">
+                            Authority: <strong className="text-slate-950">{cit.authorityLevel}</strong> | Effective: <strong className="text-slate-950">{cit.yearOrVersion}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </>
               );
