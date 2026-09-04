@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { QueryResult, Jurisdiction, AuditHistoryItem, SampleQuery } from '../types';
 import { SAMPLE_QUERIES, getMockAnalysisForQuery } from '../data/mockData';
+import { TRANSLATIONS } from '../data/translations';
 import { analyzeQuery, mapBackendResponseToQueryResult } from '../services/aiEngine';
 import { triggerGoogleTranslate } from '../services/translator';
 import { AgentPipeline } from './AgentPipeline';
@@ -41,6 +42,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   lawYear = '2024',
   onNavigateTab
 }) => {
+  const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS['en'];
   const [inputQuery, setInputQuery] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -236,7 +238,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
               title="Return to Hero Page"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-slate-950" />
-              <span>Back to Home</span>
+              <span>{t.home}</span>
             </button>
 
             <div className="flex items-center gap-1.5">
@@ -375,7 +377,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   <div className="p-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-slate-950">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
-                  <span>Classifier Wizard</span>
+                  <span>{t.classifier}</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
@@ -395,7 +397,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   <div className="p-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-slate-950">
                     <BookOpen className="w-3.5 h-3.5" />
                   </div>
-                  <span>TKDL Sanskrit Radar</span>
+                  <span>{t.tkdl}</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
@@ -415,7 +417,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   <div className="p-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-slate-950">
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
-                  <span>NBA ABS Duty</span>
+                  <span>{t.abs}</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
@@ -435,7 +437,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   <div className="p-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-slate-950">
                     <Sliders className="w-3.5 h-3.5" />
                   </div>
-                  <span>What-If Simulator</span>
+                  <span>{t.whatif}</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
@@ -455,7 +457,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   <div className="p-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-slate-950">
                     <FileCheck className="w-3.5 h-3.5" />
                   </div>
-                  <span>IP Readiness Passport</span>
+                  <span>{t.passport}</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
@@ -475,7 +477,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                   <div className="p-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-slate-950">
                     <Cpu className="w-3.5 h-3.5" />
                   </div>
-                  <span>Architecture Inspector</span>
+                  <span>{t.architecture}</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-950 transition-transform group-hover:translate-x-0.5 relative z-10" />
               </div>
@@ -514,7 +516,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 text-white text-xs font-bold transition-all border border-slate-800 hover:bg-slate-800"
             >
               <Home className="w-3.5 h-3.5" />
-              <span>Hero Home</span>
+              <span>{t.home}</span>
             </button>
 
             <div className="h-4 w-[1px] bg-slate-300 hidden sm:block" />
@@ -782,7 +784,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                     handleQuerySubmit(inputQuery);
                   }
                 }}
-                placeholder={attachedFiles.length > 0 ? 'Add context or submit attached files...' : 'Ask IP-SAKTI Sahayak or describe formulation for instant audit...'}
+                placeholder={attachedFiles.length > 0 ? 'Add context or submit attached files...' : t.askPlaceholder}
                 className="flex-1 min-w-0 bg-transparent text-slate-950 text-xs sm:text-sm font-medium focus:outline-none placeholder:text-slate-400 py-1.5 relative z-10"
               />
 
