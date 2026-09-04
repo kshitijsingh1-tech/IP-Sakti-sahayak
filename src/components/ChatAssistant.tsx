@@ -137,7 +137,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         {
           id: 'msg-asst-init',
           sender: 'assistant',
-          text: `📋 STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${activeResult.readinessPassport?.overallScore || 69}%)\n⚠️ Missing 2 Statutory Requirements for Patent Grant:\n  1. Section 3(d) synergistic bio-activity data required under Patents Act 1970.\n  2. Mandatory Form III pre-approval required under Biological Diversity Act 2023.\n\nStatutory 4-agent audit & GraphRAG synthesis complete for "${activeResult.userQuery || 'AYUSH Audit'}". Select any tool below to inspect details.`,
+          text: `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${activeResult.readinessPassport?.overallScore || 69}%)\nMissing 2 Statutory Requirements for Patent Grant:\n  1. Section 3(d) synergistic bio-activity data required under Patents Act 1970.\n  2. Mandatory Form III pre-approval required under Biological Diversity Act 2023.\n\nStatutory 4-agent audit & GraphRAG synthesis complete for "${activeResult.userQuery || 'AYUSH Audit'}". Select any tool below to inspect details.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           result: activeResult
         }
@@ -260,9 +260,9 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
       let verdictStatement = '';
       if (isPatentReady) {
-        verdictStatement = `📋 STATUTORY VERDICT: PATENT GRANT READY (Score: ${score}%)\n✅ Meets all statutory criteria under Patents Act 1970 (Sec 3p/3d), BD Act 2023, and AYUSH guidelines.`;
+        verdictStatement = `STATUTORY VERDICT: PATENT GRANT READY (Score: ${score}%)\nMeets all statutory criteria under Patents Act 1970 (Sec 3p/3d), BD Act 2023, and AYUSH guidelines.`;
       } else {
-        verdictStatement = `📋 STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\n⚠️ You are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
+        verdictStatement = `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\nYou are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
           blockers.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
       }
 
