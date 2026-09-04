@@ -1,14 +1,44 @@
 import React from 'react';
-import type { IPReadinessPassport } from '../types';
-import { Globe, Award, Download, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import type { IPReadinessPassport, QueryResult } from '../types';
+import { Globe, Award, Download, CheckCircle2, AlertCircle, Sparkles, FileCheck } from 'lucide-react';
+import { exportToPdf, exportToWord } from '../utils/exportUtils';
 
 interface ReadinessPassportProps {
   passport: IPReadinessPassport;
+  result?: QueryResult;
 }
 
-export const ReadinessPassport: React.FC<ReadinessPassportProps> = ({ passport }) => {
-  const handlePrintPdf = () => {
-    window.print();
+export const ReadinessPassport: React.FC<ReadinessPassportProps> = ({ passport, result }) => {
+  const dummyResult: QueryResult = result || {
+    queryId: `passport-${Date.now()}`,
+    userQuery: 'Ayurvedic IP Readiness Audit',
+    jurisdiction: 'INDIA',
+    classification: {
+      category: 'PROPRIETARY_MEDICINE',
+      title: 'Ayurvedic Formulation',
+      confidence: 88,
+      description: 'Standardized evaluation under Indian Patents Act 1970 and Biological Diversity Act 2023.',
+      regulatoryBody: 'AYUSH Ministry / CDSCO',
+      evidenceRequirements: [],
+      ipPosture: 'Conditional Patentability',
+      absPosture: 'NBA Approval Mandatory'
+    },
+    ipMap: [],
+    absAnalysis: {
+      isApplicable: true,
+      resourceOrigin: 'Indian Biological Resources',
+      dutyType: 'APPROVAL_REQUIRED',
+      authority: 'National Biodiversity Authority (NBA)',
+      statutoryBasis: 'BD Act 2023',
+      requiredActions: []
+    },
+    tkOverlap: [],
+    readinessPassport: passport,
+    agentSteps: [],
+    citations: [],
+    nodes: [],
+    edges: [],
+    legalDisclaimer: 'DISCLAIMER: IP-SAKTI Sahayak official decision report.'
   };
 
   const scores = [
@@ -43,7 +73,7 @@ export const ReadinessPassport: React.FC<ReadinessPassportProps> = ({ passport }
       <div className="absolute -top-20 -right-20 w-80 h-80 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/12 via-[#fbbc05]/12 to-[#34a853]/15 blur-3xl pointer-events-none rounded-full" />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4 relative z-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3 relative z-10">
         <div>
           <div className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-slate-950" />
@@ -56,13 +86,26 @@ export const ReadinessPassport: React.FC<ReadinessPassportProps> = ({ passport }
           </p>
         </div>
         
-        <button
-          onClick={handlePrintPdf}
-          className="px-3.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer border border-slate-950"
-        >
-          <Download className="w-3.5 h-3.5 text-white" />
-          Export Official Passport PDF
-        </button>
+        {/* Export Buttons: PDF and Word */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => exportToPdf(dummyResult)}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer border border-slate-950"
+            title="Download PDF Document"
+          >
+            <Download className="w-3.5 h-3.5 text-white" />
+            <span>PDF (.pdf)</span>
+          </button>
+
+          <button
+            onClick={() => exportToWord(dummyResult)}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-300 shadow-xs cursor-pointer"
+            title="Download Microsoft Word Document"
+          >
+            <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+            <span>Word (.docx)</span>
+          </button>
+        </div>
       </div>
 
       {/* Score Overview Banner with Radar Chart */}

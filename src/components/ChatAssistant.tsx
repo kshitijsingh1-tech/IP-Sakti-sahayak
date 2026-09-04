@@ -14,6 +14,7 @@ import { ABSChecker } from './ABSChecker';
 import { WhatIfSimulator } from './WhatIfSimulator';
 import { ReadinessPassport } from './ReadinessPassport';
 import { ArchitectureView } from './ArchitectureView';
+import { exportToPdf, exportToWord } from '../utils/exportUtils';
 import { 
   Send, BookOpen, RefreshCw, Plus, Search, 
   PanelLeftClose, PanelLeftOpen, ShieldCheck, 
@@ -734,13 +735,25 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
             </select>
 
             {activeResult && (
-              <button
-                onClick={() => window.print()}
-                className="px-3.5 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
-              >
-                <Download className="w-3.5 h-3.5 text-white" />
-                <span className="hidden md:inline">Export Passport PDF</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => exportToPdf(activeResult)}
+                  className="px-3 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer border border-slate-800"
+                  title="Export Official PDF Report"
+                >
+                  <Download className="w-3.5 h-3.5 text-white" />
+                  <span className="hidden md:inline">PDF</span>
+                </button>
+
+                <button
+                  onClick={() => exportToWord(activeResult)}
+                  className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-300 shadow-xs cursor-pointer"
+                  title="Export Editable Microsoft Word (.docx) Document"
+                >
+                  <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="hidden md:inline">Word</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -1301,7 +1314,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                     <WhatIfSimulator />
                   )}
                   {activeModalTool === 'passport' && (
-                    <ReadinessPassport passport={displayResult.readinessPassport} />
+                    <ReadinessPassport passport={displayResult.readinessPassport} result={displayResult} />
                   )}
                   {activeModalTool === 'architecture' && (
                     <ArchitectureView />
