@@ -131,6 +131,7 @@ export interface AuditHistoryItem {
   timestamp: string;
   score: number;
   result: QueryResult;
+  messages?: any[];
 }
 
 export interface SampleQuery {

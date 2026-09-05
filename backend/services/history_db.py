@@ -70,14 +70,23 @@ def save_audit_session(audit_result: Dict[str, Any]) -> None:
         cleaned_query = user_query.strip().lower()
         conn = _get_connection()
         with conn:
-            # Clean up prior instances of the exact same query to avoid duplicate flooding
-            if cleaned_query:
-                conn.execute("DELETE FROM audit_history WHERE TRIM(LOWER(user_query)) = ?", (cleaned_query,))
-            conn.execute("""
-                INSERT OR REPLACE INTO audit_history 
-                (query_id, user_query, jurisdiction, law_year, timestamp, formatted_time, overall_score, category_title, full_payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (query_id, user_query, jurisdiction, law_year, now_ts, formatted_time, overall_score, category_title, payload_str))
+            # Check if this session ID already exists in audit_history
+            cursor = conn.execute("SELECT query_id FROM audit_history WHERE query_id = ?", (query_id,))
+            existing = cursor.fetchone()
+            if existing:
+                conn.execute("""
+                    UPDATE audit_history 
+                    SET timestamp = ?, formatted_time = ?, overall_score = ?, full_payload = ?
+                    WHERE query_id = ?
+                """, (now_ts, formatted_time, overall_score, payload_str, query_id))
+            else:
+                if cleaned_query:
+                    conn.execute("DELETE FROM audit_history WHERE TRIM(LOWER(user_query)) = ?", (cleaned_query,))
+                conn.execute("""
+                    INSERT OR REPLACE INTO audit_history 
+                    (query_id, user_query, jurisdiction, law_year, timestamp, formatted_time, overall_score, category_title, full_payload)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (query_id, user_query, jurisdiction, law_year, now_ts, formatted_time, overall_score, category_title, payload_str))
         conn.close()
         logger.info("Saved audit session '%s' to SQLite history DB", query_id)
     except Exception as e:

@@ -47,7 +47,8 @@ import { classifyQuerySmart, type RouteMode } from './routerAgent';
 export async function analyzeQuery(
   userQuery: string,
   jurisdiction: Jurisdiction,
-  lawYear: string = '2024'
+  lawYear: string = '2024',
+  sessionId?: string
 ): Promise<QueryResult> {
   const qLower = userQuery.toLowerCase().trim();
   const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -61,11 +62,15 @@ export async function analyzeQuery(
         query: userQuery,
         jurisdiction,
         law_year: lawYear,
+        session_id: sessionId || undefined,
       }),
     });
 
     if (response.ok) {
       const data = await response.json();
+      if (sessionId && !data.query_id) {
+        data.query_id = sessionId;
+      }
       return mapBackendResponseToQueryResult(data, userQuery, jurisdiction, lawYear);
     }
   } catch (err) {
@@ -105,7 +110,7 @@ export async function analyzeQuery(
     const isHybrid = mode === 'HYBRID';
     const isExport = userQuery.toLowerCase().includes('export') || userQuery.toLowerCase().includes('germany') || userQuery.toLowerCase().includes('global');
     return {
-      queryId: `${mode.toLowerCase()}-${Date.now()}`,
+      queryId: sessionId || `${mode.toLowerCase()}-${Date.now()}`,
       userQuery,
       jurisdiction,
       classification: {
@@ -312,7 +317,7 @@ export async function analyzeQuery(
   ];
 
   return {
-    queryId: `query-${Date.now()}`,
+    queryId: sessionId || `query-${Date.now()}`,
     userQuery,
     jurisdiction,
     classification: {

@@ -50,6 +50,7 @@ class AuditRequest(BaseModel):
     jurisdiction: str = Field(default="INDIA", description="INDIA or INTERNATIONAL")
     law_year: str = Field(default="2024", description="Law version year e.g. 2024")
     language: str = Field(default="en", description="Response language: en | hi | sa | ta")
+    session_id: Optional[str] = Field(default=None, description="Optional conversation session ID")
 
 class AgentStepResponse(BaseModel):
     agent: str
@@ -331,6 +332,8 @@ async def run_audit(request: AuditRequest):
 
     elapsed_ms = int((time.time() - start) * 1000)
     result["processing_time_ms"] = elapsed_ms
+    if request.session_id:
+        result["query_id"] = request.session_id
 
     # Automatically save audit session to SQLite history DB
     try:

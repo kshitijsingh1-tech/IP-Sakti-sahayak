@@ -111,8 +111,11 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const [isFacilitatorModalOpen, setIsFacilitatorModalOpen] = useState(false);
   const [facilitatorFormSubmitted, setFacilitatorFormSubmitted] = useState(false);
 
-  // Selected history item tracking for unique sidebar highlight
-  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  // Selected history item / session tracking for current chat
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(() => {
+    if (activeResult?.queryId) return activeResult.queryId;
+    return null;
+  });
 
   // Continuous Chat Conversation Messages Stream (ChatGPT / Claude style)
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -180,6 +183,22 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
             return;
           }
 
+          // Build a map of existing local messages so continuous multi-turn chat threads are preserved
+          const existingLocalMessages = new Map<string, ChatMessage[]>();
+          try {
+            const saved = localStorage.getItem('ipsakti_audit_history');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed)) {
+                for (const it of parsed) {
+                  if (it.id && Array.isArray(it.messages) && it.messages.length > 0) {
+                    existingLocalMessages.set(it.id, it.messages);
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+
           const seenQueries = new Set<string>();
           const mappedSessions: AuditHistoryItem[] = [];
 
@@ -205,13 +224,15 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
               mappedResult = getMockAnalysisForQuery(rawQuery || 'AYUSH Formulation Audit', jurisdiction);
             }
 
+            const sessId = sess.id || `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
             mappedSessions.push({
-              id: sess.id || `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              id: sessId,
               query: rawQuery,
               title: sess.title || rawQuery.slice(0, 36),
               timestamp: sess.timestamp || 'Recent',
               score: sess.score !== undefined ? Number(sess.score) : (mappedResult.readinessPassport?.overallScore ?? 70),
-              result: mappedResult
+              result: mappedResult,
+              messages: existingLocalMessages.get(sessId)
             });
           }
 
@@ -234,6 +255,16 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Determine if this is a new chat session or a follow-up query in the existing continuous chat
+    const isNewSession = isFreshSession || !selectedHistoryId || messages.length === 0;
+    const currentSessionId = isNewSession
+      ? `session-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      : selectedHistoryId;
+
+    if (isNewSession) {
+      setSelectedHistoryId(currentSessionId);
+    }
+
     // Append User Message to continuous stream
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -243,14 +274,18 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       files: attachedFiles.length > 0 ? [...attachedFiles] : undefined
     };
 
-    if (isFreshSession) {
+    let nextMessages: ChatMessage[] = [];
+    if (isNewSession) {
+      nextMessages = [userMsg];
       setMessages([userMsg]);
     } else {
       setMessages(prev => {
         if (prev.length === 1 && prev[0].sender === 'user' && prev[0].text === finalQuery) {
+          nextMessages = prev;
           return prev;
         }
-        return [...prev, userMsg];
+        nextMessages = [...prev, userMsg];
+        return nextMessages;
       });
     }
     setInputQuery('');
@@ -258,7 +293,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
     setIsLoading(true);
 
     try {
-      const result = await analyzeQuery(finalQuery, jurisdiction, lawYear);
+      const result = await analyzeQuery(finalQuery, jurisdiction, lawYear, currentSessionId);
       onAnalysisResult(result);
 
       const verdictStatement = createVerdictStatement(result, finalQuery);
@@ -272,28 +307,51 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         result: result
       };
 
-      setMessages(prev => {
-        if (isFreshSession) {
-          return [userMsg, asstMsg];
-        }
-        return [...prev, asstMsg];
-      });
+      const finalMessages = isNewSession ? [userMsg, asstMsg] : [...(nextMessages.length > 0 ? nextMessages : messages), asstMsg];
+      setMessages(finalMessages);
 
       const querySnippet = finalQuery.length > 36 ? finalQuery.substring(0, 36) + '...' : finalQuery;
-      const newItem: AuditHistoryItem = {
-        id: result.queryId || `hist-${Date.now()}`,
-        query: finalQuery,
-        title: querySnippet,
-        timestamp: timeStr,
-        score: result.readinessPassport?.overallScore ?? 70,
-        result
-      };
-
-      setSelectedHistoryId(newItem.id);
 
       setHistoryItems(prev => {
-        const normQ = finalQuery.trim().toLowerCase();
-        const updated = [newItem, ...prev.filter(i => i.id !== newItem.id && (i.query || '').trim().toLowerCase() !== normQ)];
+        let updated: AuditHistoryItem[];
+        if (isNewSession) {
+          const newItem: AuditHistoryItem = {
+            id: currentSessionId,
+            query: finalQuery,
+            title: querySnippet,
+            timestamp: timeStr,
+            score: result.readinessPassport?.overallScore ?? 70,
+            result,
+            messages: finalMessages
+          };
+          const normQ = finalQuery.trim().toLowerCase();
+          updated = [newItem, ...prev.filter(i => i.id !== currentSessionId && (i.query || '').trim().toLowerCase() !== normQ)];
+        } else {
+          // Update the existing session in place (preserves original session title & ID, updates timestamp, score, result, and all messages)
+          updated = prev.map(item => {
+            if (item.id === currentSessionId) {
+              return {
+                ...item,
+                timestamp: timeStr,
+                score: result.readinessPassport?.overallScore ?? item.score,
+                result,
+                messages: finalMessages
+              };
+            }
+            return item;
+          });
+          if (!updated.some(i => i.id === currentSessionId)) {
+            updated.unshift({
+              id: currentSessionId,
+              query: finalQuery,
+              title: querySnippet,
+              timestamp: timeStr,
+              score: result.readinessPassport?.overallScore ?? 70,
+              result,
+              messages: finalMessages
+            });
+          }
+        }
         try {
           localStorage.setItem('ipsakti_audit_history', JSON.stringify(updated));
         } catch (e) {}
@@ -401,21 +459,27 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         histText = `STATUTORY VERDICT: ${statusTitle} (Score: ${score}%)${blockerSummary}\n\nStatutory 4-agent audit & GraphRAG synthesis complete for "${item.query || item.title || 'AYUSH Audit'}". Select any tool below to inspect details.`;
       }
 
-      setMessages([
-        {
-          id: `user-hist-${item.id}`,
-          sender: 'user',
-          text: item.query || item.title || 'AYUSH Formulation Audit',
-          timestamp: timeStr
-        },
-        {
-          id: `asst-hist-${item.id}`,
-          sender: 'assistant',
-          text: histText,
-          timestamp: timeStr,
-          result: mapped
-        }
-      ]);
+      if (Array.isArray(item.messages) && item.messages.length > 0) {
+        setMessages(item.messages);
+      } else {
+        const initialMsgs: ChatMessage[] = [
+          {
+            id: `user-hist-${item.id}`,
+            sender: 'user',
+            text: item.query || item.title || 'AYUSH Formulation Audit',
+            timestamp: timeStr
+          },
+          {
+            id: `asst-hist-${item.id}`,
+            sender: 'assistant',
+            text: histText,
+            timestamp: timeStr,
+            result: mapped
+          }
+        ];
+        setMessages(initialMsgs);
+        item.messages = initialMsgs;
+      }
     } catch (err) {
       console.error('History item selection error:', err);
     }
