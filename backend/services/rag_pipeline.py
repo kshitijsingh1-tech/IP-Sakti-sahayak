@@ -315,7 +315,7 @@ async def run_4_agent_pipeline(
                     "| **2. Biological Resources** | NBA Form III | Mandatory clearance for Indian herbs before patent grant |\n"
                     "| **3. Examination** | Form 18 / 18A | Request examination within 48 months of priority date |\n"
                     "| **4. Grant & Term** | Patent Grant | 20-year protection from filing date, subject to renewal |\n\n"
-                    "💡 **Pro-Tip**: File a **Provisional Application (Form 2)** immediately to secure your priority filing date while finalizing lab stability and synergistic clinical data."
+                    " **Pro-Tip**: File a **Provisional Application (Form 2)** immediately to secure your priority filing date while finalizing lab stability and synergistic clinical data."
                 )
             else:
                 clean_resp = (

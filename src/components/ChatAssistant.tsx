@@ -71,7 +71,18 @@ function createVerdictStatement(result: QueryResult, queryText: string): string 
     stmt = `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\nYou are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
       blockers.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
   }
-  stmt += `\n\nStatutory 4-agent audit & GraphRAG synthesis complete for: "${queryText}". Select any tool button below (Pins, Graph, Passport) to view full legal evidence.`;
+  stmt += `\n\n### Innovation vs Possible Route Assessment (Patent Claim Analysis)\n\n` +
+    `| Innovation | Possible route | Brief Assessment (Supports / Unsupports Patent Claim) |\n` +
+    `| :--- | :--- | :--- |\n` +
+    `| **Novel formulation/process** | Patent | **Supports**: Novel standardized extraction protocols or non-obvious synergistic combinations overcome Section 3(d)/3(e) to support patent claims. |\n` +
+    `| **Brand name** | Trademark | **Unsupports Patent Directly**: Brand identity is protected under Trademark Act 1999; commercial branding cannot be claimed within a technical patent. |\n` +
+    `| **Product appearance** | Design | **Unsupports Patent Directly**: Aesthetic packaging/capsule shape is protected under Designs Act 2000; does not satisfy technical novelty for patent claims. |\n` +
+    `| **Geographic origin** | GI | **Unsupports Patent Monopoly**: Terroir/origin (e.g. Nagori Ashwagandha) is protected via Geographical Indications Act 1999; triggers NBA ABS duties rather than exclusive patent rights. |\n` +
+    `| **Confidential manufacturing process** | Trade secret | **Alternative / Supportive**: Proprietary unpatented extraction parameters can be held as trade secrets without 20-year disclosure, preserving exclusivity. |\n` +
+    `| **New plant variety** | Plant-variety protection | **Unsupports Patent Directly**: Novel botanical varieties are protected under the Protection of Plant Varieties & Farmers' Rights Act 2001 (PPV&FR), not Patents Act. |\n` +
+    `| **Original software/content** | Copyright | **Unsupports Patent Directly**: Educational literature, monographs, and diagnostic algorithms are protected under Copyright Act 1957; does not support formulation patent claims. |\n` +
+    `| **Traditional knowledge** | Generally defensive protection rather than conventional patenting | **Unsupports (Defensive Only)**: Pre-existing classical formulations are statutorily barred under Section 3(p); requires documented synergistic enhancement to support patent claims. |\n\n` +
+    `Statutory 4-agent audit & GraphRAG synthesis complete for: "${queryText}". Select any tool button below (Pins, Graph, Passport) to view full legal evidence.`;
   return stmt;
 }
 

@@ -498,6 +498,72 @@ export const ProductClassifier: React.FC<ProductClassifierProps> = ({
           </div>
         </div>
 
+        {/* Innovation vs Possible Route Assessment (Patent Claim Analysis) */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+              <Scale className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>Innovation vs Possible Route Assessment (Patent Claim Support)</span>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+              Statutory IP Mapping
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-600 bg-slate-50/70">
+                  <th className="py-2 px-2.5 font-bold">Innovation</th>
+                  <th className="py-2 px-2.5 font-bold">Possible Route</th>
+                  <th className="py-2 px-2.5 font-bold">Assessment for Patent Claim</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-[11px]">
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Novel formulation/process</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">Patent</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-emerald-700">Supports:</strong> Novel standardized extraction or synergistic active ratio overcomes Section 3(d)/3(e) to support patent claims.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Brand name</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-semibold">Trademark</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-slate-500">Unsupports Patent Directly:</strong> Brand identity is protected under Trademark Act 1999; commercial branding cannot be claimed within technical patent claims.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Product appearance</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 font-semibold">Design</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-slate-500">Unsupports Patent Directly:</strong> Aesthetic packaging/capsule shape is protected under Designs Act 2000; does not satisfy technical novelty for patent claims.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Geographic origin</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-semibold">GI</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-amber-700">Unsupports Patent Monopoly:</strong> Terroir/origin (e.g. Nagori Ashwagandha) is protected via Geographical Indications Act 1999; triggers NBA ABS duties rather than exclusive patent rights.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Confidential manufacturing process</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-semibold">Trade secret</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-blue-700">Alternative / Supportive:</strong> Proprietary unpatented extraction parameters can be held as trade secrets without 20-year disclosure, preserving exclusivity.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">New plant variety</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">Plant-variety protection</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-slate-500">Unsupports Patent Directly:</strong> Novel botanical varieties are protected under the Protection of Plant Varieties & Farmers' Rights Act 2001 (PPV&FR), not Patents Act.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Original software/content</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 font-semibold">Copyright</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-slate-500">Unsupports Patent Directly:</strong> Educational literature, monographs, and diagnostic algorithms are protected under Copyright Act 1957; does not support formulation patent claims.</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-2.5 font-bold text-slate-900">Traditional knowledge</td>
+                  <td className="py-2 px-2.5"><span className="px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 font-semibold">Generally defensive protection rather than conventional patenting</span></td>
+                  <td className="py-2 px-2.5 text-slate-700 font-medium"><strong className="text-rose-700">Unsupports (Defensive Only):</strong> Pre-existing classical formulations are statutorily barred under Section 3(p); requires documented synergistic enhancement to support patent claims.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Structured Statutory Filing Checklist */}
         <div className="space-y-2.5 pt-1 border-t border-slate-200">
           <div className="flex items-center justify-between">
