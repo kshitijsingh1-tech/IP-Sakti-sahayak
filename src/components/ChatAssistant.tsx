@@ -862,19 +862,17 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                       const isFormulationOrAudit = !['CONVERSATIONAL', 'STATUTORY_INFORMATION'].includes(cat);
                       const hasCitations = Array.isArray(msg.result.citations) && msg.result.citations.length > 0;
                       const hasGraph = Array.isArray(msg.result.nodes) && msg.result.nodes.length > 0;
-                      const hasHarness = Array.isArray(msg.result.agentSteps) && msg.result.agentSteps.length > 0;
                       const hasIpMap = Array.isArray(msg.result.ipMap) && msg.result.ipMap.length > 0;
                       const hasValidScore = (msg.result.readinessPassport?.overallScore ?? 0) > 0;
 
                       // Statutory guide / definitions (like "what is a patent") do NOT need audit tool buttons
                       const showPins = isFormulationOrAudit && hasCitations;
                       const showGraph = isFormulationOrAudit && hasGraph;
-                      const showHarness = isFormulationOrAudit && hasHarness;
                       const showIpStrategy = isFormulationOrAudit && hasIpMap;
                       const showWhatIf = isFormulationOrAudit;
                       const showPassport = isFormulationOrAudit && hasValidScore;
 
-                      if (!showPins && !showGraph && !showHarness && !showIpStrategy && !showWhatIf && !showPassport) {
+                      if (!showPins && !showGraph && !showIpStrategy && !showWhatIf && !showPassport) {
                         return null;
                       }
 
@@ -899,17 +897,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                             >
                               <Share2 className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                               <span>Graph</span>
-                            </button>
-                          )}
-
-                          {showHarness && (
-                            <button
-                              onClick={() => handleOpenToolForMessage('architecture', msg.result!)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
-                              title="Inspect 4-Agent Reasoning Harness"
-                            >
-                              <Cpu className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
-                              <span>Harness</span>
                             </button>
                           )}
 
@@ -1173,26 +1160,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                 </div>
                 <FileCheck className="w-3.5 h-3.5 text-slate-300" />
                 <span>Passport</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  handleOpenTool('architecture');
-                  setIsDockOpen(false);
-                }}
-                className={`relative group/dock px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                  activeModalTool === 'architecture'
-                    ? 'bg-white text-slate-950 shadow-md'
-                    : 'hover:bg-slate-800 text-slate-200'
-                }`}
-              >
-                {/* Floating Hover Hint */}
-                <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[10.5px] font-medium tracking-normal whitespace-nowrap shadow-2xl border border-slate-700 pointer-events-none opacity-0 group-hover/dock:opacity-100 translate-y-1 group-hover/dock:translate-y-0 transition-all duration-150 z-50">
-                  <span>Inspect 4-Agent reasoning pipeline traces</span>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-900" />
-                </div>
-                <Cpu className="w-3.5 h-3.5 text-slate-300" />
-                <span>Blueprint</span>
               </button>
             </div>
 
