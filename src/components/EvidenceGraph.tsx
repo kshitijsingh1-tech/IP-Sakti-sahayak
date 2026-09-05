@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { EvidenceNode, EvidenceEdge } from '../types';
 import { 
-  Network, Sparkles, Scale, Lightbulb, 
-  ChevronRight, ChevronLeft, GraduationCap, CheckCircle2
+  Network, Sparkles, Lightbulb, 
+  ChevronRight, ChevronLeft, CheckCircle2
 } from 'lucide-react';
 
 interface EvidenceGraphProps {
@@ -72,7 +72,6 @@ const GRADE_10_EXPLAINERS: Record<string, Grade10Explainer> = {
 
 export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(nodes[0]?.id || 'n-query');
-  const [viewMode, setViewMode] = useState<'grade10' | 'attorney'>('grade10');
 
   // Ordered list of nodes for step-by-step walkthrough
   const stepOrder = ['n-query', 'n-entity', 'n-tkdl', 'n-statute-1', 'n-statute-2', 'n-verdict'];
@@ -168,20 +167,10 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
     return { x: 80 + col * 150, y: 70 + row * 100 };
   };
 
-  // Plain-English friendly labels for edges
-  const getSimpleEdgeLabel = (label: string) => {
-    if (label.includes('Extracts')) return '1. Identifies herb';
-    if (label.includes('Searches')) return '2. Checks ancient texts';
-    if (label.includes('Sec 3(p)')) return '3. Tests patent rule';
-    if (label.includes('origin')) return '4. Checks Indian plant';
-    if (label.includes('roadmap') || label.includes('clearance')) return '5. Guides verdict';
-    return label;
-  };
-
   return (
     <div className="rounded-3xl bg-white p-5 sm:p-6 border border-slate-200 shadow-xl max-w-4xl mx-auto space-y-5">
       
-      {/* Header with Mode Toggle & Simple Analogy Hook */}
+      {/* Header with Step-by-Step Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -190,40 +179,13 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-black font-display text-slate-950 flex items-center gap-2">
-                <span>How the AI Solves Your IP Case (Evidence Graph)</span>
+                <span>Statutory Evidence Graph & Reasoning Chain</span>
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Think of this like a detective connecting clues from your idea to ancient books and government laws.
+                Step-by-step verification linking your formulation to ancient texts (TKDL) and patent eligibility statutes.
               </p>
             </div>
           </div>
-        </div>
-
-        {/* View Mode Switcher */}
-        <div className="flex items-center p-1 rounded-full bg-slate-100 border border-slate-300 text-xs shrink-0 self-start sm:self-center">
-          <button
-            onClick={() => setViewMode('grade10')}
-            className={`px-3 py-1 rounded-full font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-              viewMode === 'grade10'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-950'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>10th-Grader View</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode('attorney')}
-            className={`px-3 py-1 rounded-full font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-              viewMode === 'attorney'
-                ? 'bg-slate-950 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-950'
-            }`}
-          >
-            <Scale className="w-3.5 h-3.5" />
-            <span>Patent Attorney View</span>
-          </button>
         </div>
       </div>
 
@@ -232,7 +194,7 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Story Steps: Follow the Clues Left to Right</span>
+            <span>Audit Trail: Follow the Evidence Chain Left to Right</span>
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -312,7 +274,7 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
 
             const midX = (sourcePos.x + targetPos.x) / 2;
             const pathD = `M ${sourcePos.x} ${sourcePos.y} C ${midX} ${sourcePos.y}, ${midX} ${targetPos.y}, ${targetPos.x} ${targetPos.y}`;
-            const displayLabel = viewMode === 'grade10' ? getSimpleEdgeLabel(edge.label) : edge.label;
+            const displayLabel = edge.label;
 
             return (
               <g key={idx}>
@@ -359,11 +321,6 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
             const isSelected = selectedNodeId === node.id;
             const colors = getNodeColor(node.type, isSelected);
             const expl = GRADE_10_EXPLAINERS[node.id];
-
-            // Clean 10th-grader label
-            const simpleName = expl 
-              ? expl.simpleTitle.split(':')[1]?.trim() || expl.simpleTitle 
-              : node.label;
 
             return (
               <g
@@ -412,13 +369,10 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
                   fontWeight={isSelected ? 'bold' : '600'}
                   fontFamily="sans-serif"
                 >
-                  {viewMode === 'grade10' 
-                    ? (simpleName.length > 16 ? simpleName.substring(0, 15) + '…' : simpleName)
-                    : (node.label.length > 18 ? node.label.substring(0, 17) + '…' : node.label)
-                  }
+                  {node.label.length > 18 ? node.label.substring(0, 17) + '…' : node.label}
                 </text>
 
-                {/* Secondary tiny detail text */}
+                {/* Secondary detail text */}
                 <text
                   textAnchor="middle"
                   dy="47"
@@ -427,10 +381,7 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
                   fontFamily="sans-serif"
                   fontWeight="500"
                 >
-                  {viewMode === 'grade10'
-                    ? (node.type === 'QUERY' ? 'Your Input' : node.type === 'ENTITY' ? 'Herb' : node.type === 'TK_RECORD' ? 'Ancient Book' : node.type === 'STATUTE' ? 'Law Rule' : 'Verdict')
-                    : (node.subText ? (node.subText.length > 18 ? node.subText.substring(0, 17) + '…' : node.subText) : node.type)
-                  }
+                  {node.subText ? (node.subText.length > 18 ? node.subText.substring(0, 17) + '…' : node.subText) : node.type}
                 </text>
               </g>
             );
@@ -446,7 +397,7 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
                 <span className="text-2xl">{explainer.icon}</span>
                 <div>
                   <h4 className="text-xs sm:text-sm font-black text-slate-950 flex items-center gap-2">
-                    <span>{viewMode === 'grade10' ? explainer.simpleTitle : selectedNode.label}</span>
+                    <span>{explainer.simpleTitle || selectedNode.label}</span>
                   </h4>
                   <p className="text-xs text-slate-600 font-medium mt-0.5">
                     {explainer.oneLiner}
@@ -459,11 +410,11 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
               </span>
             </div>
 
-            {/* 10th-Grader Real-Life Analogy Box */}
+            {/* Plain-English Practical Analogy Box */}
             <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex items-start gap-3">
               <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-xs text-amber-900 leading-relaxed">
-                <strong className="font-extrabold block text-amber-950 mb-0.5">Real-World School Analogy:</strong>
+                <strong className="font-extrabold block text-amber-950 mb-0.5">Plain-English Analogy:</strong>
                 <p>{explainer.analogy}</p>
               </div>
             </div>
@@ -472,7 +423,7 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
               <div className="p-3 rounded-xl bg-white border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  What the Computer Checked
+                  What the AI Verified
                 </span>
                 <p className="text-slate-700 font-medium">
                   {explainer.whatComputerDid}
