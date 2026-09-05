@@ -232,10 +232,18 @@ async def run_4_agent_pipeline(
         else: # HYBRID
             sys_prompt = (
                 "You are a Senior IP Strategy Consultant for IP-SAKTI Sahayak. "
-                "The user is asking about the patentability or feasibility of a general product concept or partial formulation. "
-                "Analyze the patentability hurdles (such as Section 3(p) Traditional Knowledge bar, Section 3(d) enhancement of efficacy, and Biological Diversity Act pre-approval). "
-                "Provide strategic advice on what evidence (e.g. synergistic data, novel extraction ratios) would be needed, "
-                "and invite the user to provide specific botanical ingredients and concentrations to trigger a full 4-Agent audit."
+                "The user is asking about the patentability or commercial feasibility of an Ayurvedic / herbal product concept or formulation. "
+                "Respond thoroughly and professionally with the following structure:\n\n"
+                "**Short answer:**\n"
+                "Provide a direct, concise executive summary (Yes/No with clear caveats on Indian patentability criteria vs export/international market requirements).\n\n"
+                "### 1. Patentability in India\n"
+                "Provide a clean Markdown table with exactly these columns:\n"
+                "| REQUIREMENT | WHAT IT MEANS FOR YOUR FORMULATION | HOW TO SATISFY IT |\n"
+                "Include rows for: Novelty (Sec. 2(1)(j)), Inventive step / Non-obviousness (Sec. 2(1)(ja)), Industrial applicability (Sec. 2(1)(ac)), Section 3(p) Traditional Knowledge Bar, Section 3(d) / 3(e) Synergistic Efficacy, and Biological Diversity Act (NBA Form III).\n\n"
+                "### 2. Commercialization & Export Regulations\n"
+                "Detail statutory requirements for the target foreign market (e.g., German BfArM / EU Traditional Herbal Medicinal Products Directive THMPD 2004/24/EC, or dietary supplement route) and territorial patenting (PCT / European Patent).\n\n"
+                "### 3. Actionable Strategic Roadmap\n"
+                "Step-by-step guidance on prior art clearance, lab assay evidence, and regulatory filings."
             )
             user_prompt = f"Product Concept / Feasibility Query: '{query}'\nJurisdiction: {jurisdiction}\nProvide strategic patentability guidance tailored specifically to this concept."
 
@@ -250,10 +258,8 @@ async def run_4_agent_pipeline(
         if not clean_resp:
             if mode == "CHAT":
                 q_lower = query.lower().strip()
-                is_greeting = any(w in q_lower for w in [
-                    "hello", "hi", "hey", "who are you", "what are you", "what is your name", 
-                    "what do you do", "introduce", "namaste", "what is ip sakti", "what is ip-sakti", "help"
-                ])
+                import re
+                is_greeting = bool(re.search(r'\b(hello|hi|hey|who are you|what are you|what is your name|what do you do|introduce|namaste)\b', q_lower)) and len(q_lower.split()) <= 6
                 if is_greeting:
                     clean_resp = (
                         "Hello! I am **IP-SAKTI Sahayak**, your AI Assistant and Decision Engine for "
@@ -268,11 +274,11 @@ async def run_4_agent_pipeline(
                     )
                 else:
                     clean_resp = (
-                        f"Hello! I am **IP-SAKTI Sahayak**, your AI Assistant for Ayurvedic IPR & Biodiversity compliance.\n\n"
-                        f"I received your query: **\"{query}\"**.\n\n"
-                        "I specialize in analyzing herbal formulations, prior-art searches, Section 3(p)/3(d) patent hurdles, "
-                        "and NBA regulatory compliance. You can ask me legal questions (e.g., *'What is Section 3(p)?'*) or submit "
-                        "a formulation with botanical ingredients to trigger a full statutory audit."
+                        f"### Response to: {query}\n\n"
+                        f"Under the Indian AYUSH regulatory & IP framework, for your query regarding: **\"{query}\"**:\n\n"
+                        "- **Traditional Knowledge Clearance**: Ensure classical Ayurvedic formulations check TKDL non-patentability provisions under Section 3(p).\n"
+                        "- **Novelty & Efficacy**: If seeking patent protection, non-obvious synergistic enhancement of therapeutic efficacy must be documented with comparative empirical data (Section 3(d)).\n"
+                        "- **Biodiversity Approval**: If utilizing Indian biological resources, mandatory Form III pre-approval from the National Biodiversity Authority (NBA) under Section 6 of the Biological Diversity Act 2002/2023 is required prior to patent grant."
                     )
             elif mode == "GUIDE":
                 clean_resp = (
@@ -287,11 +293,21 @@ async def run_4_agent_pipeline(
                 )
             else:
                 clean_resp = (
-                    f"### Strategic Patentability Assessment: {query}\n\n"
-                    "For botanical and natural health formulations in India:\n\n"
-                    "1. **Section 3(p) TKDL Clearance**: Formulations derived from classical Ayurvedic texts (Ayurvedic Pharmacopoeia of India, Charaka, Sushruta) are barred from pure composition patents.\n"
-                    "2. **Section 3(d) / 3(e) Synergistic Evidence**: A patent requires verified empirical pharmacological bio-activity data showing non-obvious synergistic efficacy exceeding the additive effect of isolated ingredients.\n"
-                    "3. **Biological Diversity Compliance**: Mandatory approval from the National Biodiversity Authority (Form III) is required under Section 6 of the BD Act 2023 before any patent can be sealed or granted."
+                    f"**Short answer:**\n"
+                    f"Yes — you can file a patent for your standardized herbal formulation in India *provided* it meets statutory patentability criteria (novelty, inventive step, and synergistic efficacy overcoming Section 3(p)). A patent in India, however, gives you protection only in India; international commercialization (such as Germany/EU) requires separate regional patent protection (e.g. via PCT or European Patent Office) and strict compliance with target market herbal-medicine regulations (such as German BfArM and EU THMPD).\n\n"
+                    "### 1. Patentability in India\n\n"
+                    "| REQUIREMENT | WHAT IT MEANS FOR YOUR FORMULATION | HOW TO SATISFY IT |\n"
+                    "| :--- | :--- | :--- |\n"
+                    "| **Novelty (Sec. 2(1)(j))** | The exact composition, method of standardization, or unique combination of extracts must not have been publicly disclosed or documented in TKDL. | Conduct a thorough prior-art search (patents, scientific literature, classical Ayurvedic treatises). If the exact ratio or extraction method is new, claim novelty. |\n"
+                    "| **Inventive step (Sec. 2(1)(ja))** | The formulation must not be obvious to a person skilled in Ayurvedic or pharmaceutical sciences. | Demonstrate that the combination or standardized ratio produces unexpected synergistic therapeutic efficacy (e.g., enhanced bioavailability or bio-activity) that exceeds simple additive effects. |\n"
+                    "| **Industrial applicability (Sec. 2(1)(ac))** | The formulation must be capable of repeatable industrial manufacture and use. | Provide scalable standardized manufacturing specs, batch stability data, and pre-clinical/clinical validation. |\n"
+                    "| **Section 3(p) TKDL Clearance** | Inventions that are mere aggregations of traditionally known components are statutorily non-patentable. | File a Process / Method Patent focusing on proprietary standardized extraction techniques or synergistic marker fractions. |\n"
+                    "| **Section 3(d) Efficacy Requirement** | Mere discovery of a known substance requires proof of significant enhancement of known therapeutic efficacy. | Provide comparative in-vitro / in-vivo pharmacological data proving the combination achieves superior efficacy over isolated components. |\n"
+                    "| **Biological Diversity Act (NBA)** | Accessing Indian biological resources requires mandatory National Biodiversity Authority pre-approval. | Submit Form III to the NBA under Section 6 of the Biological Diversity Act 2002/2023 prior to grant of patent. |\n\n"
+                    "### 2. Commercialization in Germany / European Union\n\n"
+                    "- **Regulatory Classification**: In Germany, herbal products are evaluated by the Federal Institute for Drugs and Medical Devices (BfArM). Under the EU Traditional Herbal Medicinal Products Directive (THMPD 2004/24/EC), a simplified registration requires documented 30 years of traditional use (at least 15 years within the EU). Alternatively, it may be commercialized as a food / dietary supplement provided no unauthorized medicinal disease claims are made.\n"
+                    "- **Quality & Good Manufacturing Practice (GMP)**: Must comply with EU-GMP and relevant European Pharmacopoeia or Ayurvedic Pharmacopoeia monographs for heavy metal, pesticide, and microbial purity.\n"
+                    "- **Patent Protection in Europe**: An Indian patent does not extend to Germany. File a PCT (Patent Cooperation Treaty) application within 12 months of your Indian priority date, designating the European Patent Office (EPO)."
                 )
 
         return {

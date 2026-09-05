@@ -100,18 +100,16 @@ def _load_groq():
         raise ValueError("GROQ_API_KEY not set in .env")
 
     model = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
+    # Always use DirectGroqLLM for resilient multi-model fallback and automatic 429 retry handling
+    return DirectGroqLLM(api_key=api_key, model=model)
 
-    try:
-        from langchain_groq import ChatGroq
-        return ChatGroq(
-            api_key=api_key,
-            model_name=model,
-            temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
-            max_tokens=int(os.getenv("AGENT_MAX_TOKENS", "2048")),
-        )
-    except Exception as e:
-        logger.info("langchain-groq not installed or failed (%s), using DirectGroqLLM via httpx", e)
-        return DirectGroqLLM(api_key=api_key, model=model)
+
+def get_direct_groq_llm():
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return None
+    model = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
+    return DirectGroqLLM(api_key=api_key, model=model)
 
 
 class DirectGroqLLM:

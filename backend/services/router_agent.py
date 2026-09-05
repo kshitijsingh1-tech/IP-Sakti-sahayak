@@ -155,21 +155,13 @@ def _heuristic_fallback(query: str) -> Dict[str, Any]:
     """Last-resort pattern matching when LLM is completely unreachable."""
     q = query.lower().strip()
 
-    # CHAT signals
-    chat_signals = ["hello", "hi ", "hey", "thanks", "thank you", "bye", "who are you",
-                    "what is your name", "my name", "ip sakti", "ipsakti", "ip-sakti", "sakti"]
-    if any(s in q for s in chat_signals) or len(q.split()) <= 2:
-        return {"mode": "CHAT", "confidence": 0.8, "reason": "Heuristic: greeting/meta", "entities": {}}
-
-    # AUDIT signals — requires specific named herbs + dosage/form
+    # Herb names & dosage forms
     herb_names = ["ashwagandha", "guduchi", "curcumin", "tulsi", "brahmi", "neem",
                   "triphala", "shilajit", "amla", "haridra", "shatavari", "giloy"]
     dosage_forms = ["capsule", "tablet", "syrup", "powder", "churna", "extract",
                     "fraction", "mg", "ml", "gummy", "oil", "taila"]
     has_herb = any(h in q for h in herb_names)
     has_form = any(f in q for f in dosage_forms)
-    if has_herb and has_form and not q.endswith("?"):
-        return {"mode": "AUDIT", "confidence": 0.7, "reason": "Heuristic: herb + dosage form", "entities": {}}
 
     # Statutory / Legal signals
     statutory_terms = ["patent", "act", "section", "law", "rule", "fee", "cost", "file", "filing",
@@ -178,18 +170,33 @@ def _heuristic_fallback(query: str) -> Dict[str, Any]:
                        "examination", "grant", "novelty", "cdsco", "ipr"]
     has_statutory = any(t in q for t in statutory_terms)
 
-    # GUIDE signals — questions about legal/statutory concepts
+    # 1. Formulation + Patentability / Feasibility Question -> HYBRID
+    if (has_herb or has_form) and (has_statutory or q.endswith("?") or "can i" in q or "patent" in q):
+        return {"mode": "HYBRID", "confidence": 0.85, "reason": "Heuristic: herb formulation + feasibility question", "entities": {}}
+
+    # 2. Pure Concrete Formulation Audit -> AUDIT
+    if has_herb and has_form and not q.endswith("?"):
+        return {"mode": "AUDIT", "confidence": 0.8, "reason": "Heuristic: herb + dosage form", "entities": {}}
+
+    # 3. Statutory / Legal Concept Question -> GUIDE
     pure_question = q.startswith(("what is", "what are", "how to", "how do", "explain",
                                    "define", "tell me about", "wha ", "wt "))
-    if pure_question and has_statutory and not has_herb:
-        return {"mode": "GUIDE", "confidence": 0.75, "reason": "Heuristic: knowledge question", "entities": {}}
+    if has_statutory and (pure_question or not has_herb):
+        return {"mode": "GUIDE", "confidence": 0.8, "reason": "Heuristic: knowledge question", "entities": {}}
 
-    # General knowledge, math, creative or miscellaneous questions without statutory terms -> CHAT
+    # 4. Strictly Word-Bounded Greeting / Meta Signals (only if short and no herbs/statutes)
+    is_short = len(q.split()) <= 7
+    is_meta = bool(re.search(r'\b(who are you|what is your name|my name|who made you|what do you do)\b', q))
+    is_greeting_word = bool(re.search(r'\b(hello|hi|hey|thanks|thank you|bye|namaste)\b', q))
+    if (is_meta or is_greeting_word) and is_short and not has_herb and not has_statutory:
+        return {"mode": "CHAT", "confidence": 0.9, "reason": "Heuristic: greeting/meta", "entities": {}}
+
+    # 5. Out-of-domain / General knowledge questions without statutory terms -> CHAT
     if not has_herb and not has_statutory:
         return {"mode": "CHAT", "confidence": 0.85, "reason": "Heuristic: general/miscellaneous query", "entities": {}}
 
-    # HYBRID — everything else (composition + question, or ambiguous)
-    return {"mode": "HYBRID", "confidence": 0.6, "reason": "Heuristic: ambiguous, defaulting safe", "entities": {}}
+    # 6. Default Safe -> HYBRID
+    return {"mode": "HYBRID", "confidence": 0.7, "reason": "Heuristic: ambiguous, defaulting safe", "entities": {}}
 
 
 # Legacy compatibility wrapper
