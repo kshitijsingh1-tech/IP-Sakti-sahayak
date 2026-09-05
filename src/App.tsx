@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Jurisdiction, QueryResult, ProductClassificationResult } from './types';
-import { SAMPLE_QUERIES, getMockAnalysisForQuery } from './data/mockData';
+import { getMockAnalysisForQuery } from './data/mockData';
 import { analyzeQuery } from './services/aiEngine';
 import { Header } from './components/Header';
 import { LandingHero } from './components/LandingHero';
@@ -11,20 +11,16 @@ import { ABSChecker } from './components/ABSChecker';
 import { WhatIfSimulator } from './components/WhatIfSimulator';
 import { ReadinessPassport } from './components/ReadinessPassport';
 import { ArchitectureView } from './components/ArchitectureView';
+import { HelpDrawer } from './components/HelpDrawer';
 
 export function App() {
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction>('INDIA');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
   const [lawYear, setLawYear] = useState<string>('2024');
   const [activeTab, setActiveTab] = useState<string>('hero');
+  const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
 
   const [activeResult, setActiveResult] = useState<QueryResult | null>(null);
-
-  useEffect(() => {
-    analyzeQuery(SAMPLE_QUERIES[0].query, 'INDIA', lawYear).then(res => {
-      setActiveResult(res);
-    });
-  }, []);
 
   const handleJurisdictionChange = async (j: Jurisdiction) => {
     setJurisdiction(j);
@@ -69,6 +65,7 @@ export function App() {
           onLawYearChange={handleLawYearChange}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onOpenHelp={() => setIsHelpOpen(true)}
         />
       )}
 
@@ -91,6 +88,7 @@ export function App() {
             activeResult={activeResult}
             lawYear={lawYear}
             onNavigateTab={setActiveTab}
+            onOpenHelp={() => setIsHelpOpen(true)}
           />
         )}
 
@@ -99,7 +97,12 @@ export function App() {
           return (
             <>
               {activeTab === 'classifier' && (
-                <ProductClassifier onClassifyComplete={handleClassifyComplete} />
+                <ProductClassifier
+                  onClassifyComplete={handleClassifyComplete}
+                  onSendToChat={() => {
+                    setActiveTab('assistant');
+                  }}
+                />
               )}
 
               {activeTab === 'tkdl' && (
@@ -111,7 +114,11 @@ export function App() {
               )}
 
               {activeTab === 'whatif' && (
-                <WhatIfSimulator />
+                <WhatIfSimulator
+                  onSendToChat={() => {
+                    setActiveTab('assistant');
+                  }}
+                />
               )}
 
               {activeTab === 'passport' && (
@@ -132,7 +139,7 @@ export function App() {
           <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-              <span className="font-extrabold text-slate-950">IP-SAKTI Sahayak • SIH 26045</span>
+              <span className="font-extrabold text-slate-950">IP-SAKTI Sahayak</span>
             </div>
             <p className="text-slate-600 font-medium">
               Built for AYUSH Practitioners, MSMEs & Researchers • Grounded in Patents Act 1970/2024, BD Act 2023 & WIPO GRATK 2024
@@ -143,6 +150,16 @@ export function App() {
           </div>
         </footer>
       )}
+
+      {/* Global Interactive Help & Statutory Knowledge Base Drawer */}
+      <HelpDrawer
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        onNavigateTab={(tab) => {
+          setIsHelpOpen(false);
+          setActiveTab(tab);
+        }}
+      />
     </div>
   );
 }

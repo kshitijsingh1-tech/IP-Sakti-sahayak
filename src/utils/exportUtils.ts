@@ -57,7 +57,7 @@ export function exportToWord(result: QueryResult): void {
     </head>
     <body>
       <h1>IP-SAKTI SAHAYAK — STATUTORY AUDIT & READINESS PASSPORT</h1>
-      <p style="font-size: 9pt; color: #64748b;">Official Government & Regulatory IP Decision Report | SIH 26045 | Issued: ${dateStr}</p>
+      <p style="font-size: 9pt; color: #64748b;">Official Statutory & Regulatory IP Decision Report | Issued: ${dateStr}</p>
       
       <div class="score-box">
         <table style="border: none; margin: 0;">
@@ -175,7 +175,7 @@ export function exportToWord(result: QueryResult): void {
       </table>
 
       <div class="footer">
-        <p><b>IP-SAKTI Sahayak (SIH 26045)</b> | AI Decision Support Engine for Ayurvedic IPR & Biodiversity Compliance</p>
+        <p><b>IP-SAKTI Sahayak</b> | AI Decision Support Engine for Ayurvedic IPR & Biodiversity Compliance</p>
         <p>This report is generated based on statutory reasoning algorithms under the Indian Patents Act 1970, BD Act 2023, and TKDL prior-art corpora.</p>
       </div>
     </body>
@@ -236,7 +236,7 @@ export function exportToPdf(result: QueryResult): void {
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`AYUSH IPR & Biodiversity Decision Engine | SIH 26045 | Issued: ${dateStr}`, 14, 18);
+  doc.text(`AYUSH IPR & Biodiversity Decision Engine | Issued: ${dateStr}`, 14, 18);
 
   // Executive Score Box
   let y = 34;
@@ -368,7 +368,7 @@ export function exportToPdf(result: QueryResult): void {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text('IP-SAKTI Sahayak (SIH 26045) | Official Statutory Reasoning Report under Indian Patents Act 1970 & BD Act 2023', 14, 284);
+  doc.text('IP-SAKTI Sahayak | Official Statutory Reasoning Report under Indian Patents Act 1970 & BD Act 2023', 14, 284);
   doc.text('DISCLAIMER: Source-cited AI statutory decision support. Official filings must be validated by a registered Patent Agent.', 14, 288);
 
   const fileName = `IP-SAKTI_Statutory_Passport_${query.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;

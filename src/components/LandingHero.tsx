@@ -4,6 +4,7 @@ import { Layers, BookOpen, Network, ShieldCheck, ArrowRight, Cpu, ChevronRight, 
 import { SAMPLE_QUERIES } from '../data/mockData';
 import type { SampleQuery } from '../types';
 import { FileUploadTrigger, FileChipsList, type UploadedFile } from './FileUploadButton';
+import { VoiceInputButton } from './VoiceInputButton';
 
 interface LandingHeroProps {
   onStartQuery: (queryText: string) => void;
@@ -43,7 +44,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
         {/* Levitating Announcement Pill Badge */}
         <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/90 border border-slate-200 text-xs font-mono font-semibold text-slate-800 backdrop-blur-xl animate-levitate-slow shadow-xs">
           <AntigravityLogo size={20} />
-          <span>Smart India Hackathon • SIH 26045 Multi-Agent RAG Harness</span>
+          <span>Autonomous Multi-Agent Statutory AYUSH RAG Engine</span>
         </div>
 
         {/* Hero Title */}
@@ -76,19 +77,26 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStartQuery, onNaviga
                 type="text"
                 value={heroInput}
                 onChange={(e) => setHeroInput(e.target.value)}
-                placeholder="Describe formulation, or attach a PDF / PPT / image..."
+                placeholder="Enter Ayurvedic formulation or ask any legal IP question (or attach files)..."
                 className="flex-1 min-w-0 bg-transparent text-slate-950 font-medium text-sm sm:text-base focus:outline-none placeholder:text-slate-400 py-1.5 relative z-10"
               />
 
               {/* Upload trigger button (paperclip) */}
               <FileUploadTrigger onFilesSelect={handleFilesSelect} />
 
+              {/* Voice-to-text dictation button */}
+              <VoiceInputButton
+                currentText={heroInput}
+                onTranscript={(spokenText) => setHeroInput(spokenText)}
+                lang="en"
+              />
+
               <button
                 type="submit"
                 className="px-6 py-3 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md hover:scale-105 transition-all shrink-0 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-white" />
-                <span>Audit Formulation</span>
+                <span>Analyze Query</span>
               </button>
             </div>
           </form>

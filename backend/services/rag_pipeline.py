@@ -15,7 +15,10 @@ import logging
 from datetime import datetime
 from typing import Any, List, Dict
 
-from backend.services.llm_layer import get_llm_with_fallback, chat, SYSTEM_PROMPT_AYUSH
+try:
+    from backend.services.llm_layer import get_llm_with_fallback, chat, SYSTEM_PROMPT_AYUSH
+except ImportError:
+    from services.llm_layer import get_llm_with_fallback, chat, SYSTEM_PROMPT_AYUSH
 
 logger = logging.getLogger(__name__)
 
@@ -185,43 +188,105 @@ async def run_4_agent_pipeline(
 
     is_export = "export" in query.lower() or jurisdiction == "INTERNATIONAL"
 
-    # 1. Intelligent Zero-Shot LLM Intent Classification
+    # 1. Intelligent Zero-Shot LLM Intent Classification (4-Mode Smart Router)
     try:
-        from backend.services.router_agent import classify_query_intent_llm
+        from backend.services.router_agent import classify_intent
     except ImportError:
-        from services.router_agent import classify_query_intent_llm
+        from services.router_agent import classify_intent
 
-    intent_res = await classify_query_intent_llm(query)
-    intent_category = intent_res.get("intent", "FORMULATION_AUDIT")
+    route_res = await classify_intent(query)
+    mode = route_res.get("mode", "HYBRID")
 
-    if intent_category in ["CONVERSATIONAL", "STATUTORY_KNOWLEDGE"]:
-        logger.info("Zero-Shot LLM Router categorized '%s' as [%s]. Bypassing 4-Agent Audit.", query, intent_category)
-        if "ip sakti" in q_lower or "ipsakti" in q_lower or "sakti" in q_lower or "who are you" in q_lower:
-            clean_resp = "IP-SAKTI Sahayak is an autonomous AI Decision & Governance Engine designed for Ayurvedic Intellectual Property Rights (IPR) and Biodiversity Compliance (SIH 26045). It features a 4-Agent Statutory Audit System evaluating Patents Act 1970 (Sec 3p/3d) and BD Act 2023."
-        else:
-            clean_resp = f"I am IP-SAKTI Sahayak, your AI assistant for Ayurvedic IPR & Biodiversity compliance. Guidance regarding '{query}': General statutory inquiries are answered cleanly without product audit scorecards."
-        
+    if mode in ["CHAT", "GUIDE", "HYBRID"]:
+        logger.info("Smart Router classified '%s' as [%s]. Executing specialized mode prompt.", query[:50], mode)
+
+        category_map = {
+            "CHAT": "CONVERSATIONAL",
+            "GUIDE": "STATUTORY_INFORMATION",
+            "HYBRID": "HYBRID_GUIDANCE"
+        }
+        title_map = {
+            "CHAT": "Conversational Response",
+            "GUIDE": "Statutory Knowledge Guidance",
+            "HYBRID": "Patentability Guidance"
+        }
+
+        # Select mode-specific LLM prompt for intelligent generation
+        if mode == "CHAT":
+            sys_prompt = (
+                "You are IP-SAKTI Sahayak, an intelligent and versatile AI assistant. "
+                "You possess comprehensive knowledge spanning Ayurvedic IPR, biodiversity governance, "
+                "general science, culinary arts, programming, mathematics, history, and casual everyday conversation. "
+                "Respond to the user's message warmly, accurately, and helpfully with clear structure. "
+                "Answer their specific question directly. Do not restrict yourself to only patent topics."
+            )
+            user_prompt = f"User query: '{query}'\nRespond helpfully, accurately, and directly."
+        elif mode == "GUIDE":
+            sys_prompt = (
+                "You are an authoritative Senior Patent & AYUSH Regulatory Specialist for IP-SAKTI Sahayak. "
+                "Provide a comprehensive, accurate, structured legal analysis addressing the user's statutory or procedural inquiry. "
+                "Cite specific sections (e.g., Patents Act 1970/2024, BD Act 2023, TKDL, WIPO GRATK Treaty 2024, PCT guidelines) as applicable, "
+                "explaining definitions, statutory tests, and practical filing steps clearly and thoroughly."
+            )
+            user_prompt = f"Statutory / Legal Question: '{query}'\nJurisdiction: {jurisdiction}\nEffective Year: {law_year}\nProvide a structured, authoritative explanation citing applicable legal provisions."
+        else: # HYBRID
+            sys_prompt = (
+                "You are a Senior IP Strategy Consultant for IP-SAKTI Sahayak. "
+                "The user is asking about the patentability or feasibility of a general product concept or partial formulation. "
+                "Analyze the patentability hurdles (such as Section 3(p) Traditional Knowledge bar, Section 3(d) enhancement of efficacy, and Biological Diversity Act pre-approval). "
+                "Provide strategic advice on what evidence (e.g. synergistic data, novel extraction ratios) would be needed, "
+                "and invite the user to provide specific botanical ingredients and concentrations to trigger a full 4-Agent audit."
+            )
+            user_prompt = f"Product Concept / Feasibility Query: '{query}'\nJurisdiction: {jurisdiction}\nProvide strategic patentability guidance tailored specifically to this concept."
+
+        clean_resp = ""
         if llm:
-            conv_prompt = f"You are IP-SAKTI Sahayak, an AI assistant for Ayurvedic IPR & Biodiversity compliance. The user asked: '{query}'. Provide a concise, highly intelligent, structured guidance response explaining the concept clearly. Do NOT generate synthetic product scores or formulation audit cards. Do NOT use <think> tags."
             try:
-                response = await chat(llm, system="You are an expert AYUSH IPR legal assistant.", user=conv_prompt)
+                response = await chat(llm, system=sys_prompt, user=user_prompt)
                 clean_resp = clean_llm_text(response)
             except Exception as e:
-                logger.warning(f"Conversational LLM call failed: {e}")
-                
+                logger.warning("Mode LLM call failed (%s)", e)
+
+        if not clean_resp:
+            if mode == "CHAT":
+                clean_resp = (
+                    f"I am **IP-SAKTI Sahayak**, your AI Assistant for Ayurvedic IPR & Biodiversity compliance.\n\n"
+                    f"Regarding your query **\"{query}\"**: High traffic was temporarily detected on the LLM reasoning cluster. "
+                    "I am available to assist you with traditional knowledge prior-art queries, Section 3(p) statutory bars, Section 3(d) efficacy evidence requirements, or Biological Diversity Act clearances."
+                )
+            elif mode == "GUIDE":
+                clean_resp = (
+                    f"### Statutory Guidance: {query}\n\n"
+                    "Under the **Indian Patents Act 1970 (amended up to 2024)** and the **Biological Diversity Act 2023**:\n\n"
+                    "- **Definition of Patent (Section 2(1)(m))**: An exclusive monopoly granted by the State for an invention (a novel product or process involving an inventive step and capable of industrial application).\n"
+                    "- **Term of Protection (Section 53)**: Exactly 20 years from the filing date (or PCT international filing date), subject to annual statutory renewal fees.\n"
+                    "- **Core Patentability Criteria**: Novelty (Sec. 2(1)(j)), Inventive Step / Non-obviousness (Sec. 2(1)(ja)), and Industrial Applicability (Sec. 2(1)(ac)).\n"
+                    "- **Traditional Knowledge Bar (Section 3(p))**: Any invention which in effect is traditional knowledge or an aggregation or duplication of known properties of traditionally known components is statutorily non-patentable.\n"
+                    "- **Efficacy Requirement (Section 3(d))**: Mere discovery of a new form of a known substance without significant enhancement of known therapeutic efficacy is non-patentable.\n"
+                    "- **Mandatory NBA Approval**: Utilization of Indian biological resources requires Form III pre-approval under Section 6 of the BD Act 2002/2023 prior to grant."
+                )
+            else:
+                clean_resp = (
+                    f"### Strategic Patentability Assessment: {query}\n\n"
+                    "For botanical and natural health formulations in India:\n\n"
+                    "1. **Section 3(p) TKDL Clearance**: Formulations derived from classical Ayurvedic texts (Ayurvedic Pharmacopoeia of India, Charaka, Sushruta) are barred from pure composition patents.\n"
+                    "2. **Section 3(d) / 3(e) Synergistic Evidence**: A patent requires verified empirical pharmacological bio-activity data showing non-obvious synergistic efficacy exceeding the additive effect of isolated ingredients.\n"
+                    "3. **Biological Diversity Compliance**: Mandatory approval from the National Biodiversity Authority (Form III) is required under Section 6 of the BD Act 2023 before any patent can be sealed or granted."
+                )
+
         return {
-            "query_id": f"conv-{int(time.time())}",
+            "query_id": f"{mode.lower()}-{int(time.time())}",
             "user_query": query,
             "jurisdiction": jurisdiction,
             "law_year": law_year,
             "classification": {
-                "category": "CONVERSATIONAL",
-                "title": "Knowledge & Guidance Response",
-                "confidence": 100,
+                "category": category_map.get(mode, "CONVERSATIONAL"),
+                "title": title_map.get(mode, "Statutory Guidance"),
+                "confidence": round(route_res.get("confidence", 0.9) * 100),
                 "description": clean_resp,
-                "regulatory_body": "Indian Patent Office & Ministry of Ayush",
+                "regulatory_body": "Indian Patent Office & Ministry of Ayush" if mode != "CHAT" else "",
                 "evidence_requirements": [],
-                "ip_posture": "Statutory Guidance",
+                "ip_posture": "Statutory Guidance" if mode != "CHAT" else "",
                 "abs_posture": ""
             },
             "ip_map": [],

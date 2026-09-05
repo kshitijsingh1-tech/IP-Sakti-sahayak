@@ -1,335 +1,528 @@
 import React, { useState } from 'react';
-import type { ProductClassificationResult } from '../types';
-import { Layers, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import type { ProductClassificationResult, AyurvedicCategory } from '../types';
+import { Layers, ShieldCheck, Check, RotateCcw, FileText, Send, BookOpen, FlaskConical, Leaf, Pill, SlidersHorizontal, Scale, CheckCircle2, Award } from 'lucide-react';
 
 interface ProductClassifierProps {
   onClassifyComplete: (classification: ProductClassificationResult) => void;
+  currentQuery?: string;
+  initialCategory?: AyurvedicCategory;
+  onSendToChat?: (prompt: string) => void;
 }
 
-export const ProductClassifier: React.FC<ProductClassifierProps> = ({ onClassifyComplete }) => {
-  const [step, setStep] = useState<number>(1);
-  const [q1ClassicalText, setQ1ClassicalText] = useState<'YES' | 'NO' | null>(null);
-  const [q2Extraction, setQ2Extraction] = useState<'TRADITIONAL' | 'STANDARDIZED' | 'PURIFIED' | null>(null);
-  const [q3PrimaryUse, setQ3PrimaryUse] = useState<'MEDICINE' | 'FOOD' | 'COSMETIC' | null>(null);
-  const [q4ClinicalData, setQ4ClinicalData] = useState<'YES' | 'NO' | null>(null);
+export const ProductClassifier: React.FC<ProductClassifierProps> = ({
+  onClassifyComplete,
+  currentQuery,
+  initialCategory,
+  onSendToChat
+}) => {
+  // 4 Core Dimensions with initial values derived from current query/category if available
+  const [classicalText, setClassicalText] = useState<'YES' | 'NO'>(() => {
+    if (initialCategory === 'CLASSICAL_GENERIC') return 'YES';
+    return 'NO';
+  });
+  const [extraction, setExtraction] = useState<'TRADITIONAL' | 'STANDARDIZED' | 'PURIFIED'>(() => {
+    if (initialCategory === 'CLASSICAL_GENERIC') return 'TRADITIONAL';
+    if (initialCategory === 'PHYTOPHARMACEUTICAL') return 'PURIFIED';
+    return 'STANDARDIZED';
+  });
+  const [primaryUse, setPrimaryUse] = useState<'MEDICINE' | 'FOOD' | 'COSMETIC'>(() => {
+    if (initialCategory === 'AYURVEDA_AAHAR') return 'FOOD';
+    if (initialCategory === 'COSMETIC') return 'COSMETIC';
+    return 'MEDICINE';
+  });
+  const [clinicalData, setClinicalData] = useState<'YES' | 'NO'>(() => {
+    if (initialCategory === 'PHYTOPHARMACEUTICAL') return 'YES';
+    return 'NO';
+  });
 
-  const calculateCategory = (): ProductClassificationResult => {
-    const extraConf = q4ClinicalData === 'YES' ? 2 : 0;
-    if (q1ClassicalText === 'YES' && q2Extraction === 'TRADITIONAL' && q3PrimaryUse === 'MEDICINE') {
+  // Archetype Presets for 1-Click Fast Classification
+  const applyPreset = (preset: 'CLASSICAL' | 'PROPRIETARY' | 'AAHAR' | 'PHYTO') => {
+    switch (preset) {
+      case 'CLASSICAL':
+        setClassicalText('YES');
+        setExtraction('TRADITIONAL');
+        setPrimaryUse('MEDICINE');
+        setClinicalData('NO');
+        break;
+      case 'PROPRIETARY':
+        setClassicalText('NO');
+        setExtraction('STANDARDIZED');
+        setPrimaryUse('MEDICINE');
+        setClinicalData('NO');
+        break;
+      case 'AAHAR':
+        setClassicalText('NO');
+        setExtraction('STANDARDIZED');
+        setPrimaryUse('FOOD');
+        setClinicalData('NO');
+        break;
+      case 'PHYTO':
+        setClassicalText('NO');
+        setExtraction('PURIFIED');
+        setPrimaryUse('MEDICINE');
+        setClinicalData('YES');
+        break;
+    }
+  };
+
+  // Live Statutory Calculation
+  const calculateResult = (): ProductClassificationResult => {
+    const extraConf = clinicalData === 'YES' ? 3 : 0;
+
+    if (classicalText === 'YES' && extraction === 'TRADITIONAL' && primaryUse === 'MEDICINE') {
       return {
         category: 'CLASSICAL_GENERIC',
-        title: 'Classical Ayurvedic Medicine (Ayurvedic SLA 25D)',
+        title: 'Classical Ayurvedic Medicine (Rule 158-B / SLA Form 25D)',
         regulatoryBody: 'State Licensing Authority (AYUSH SLA) under Rule 158-B',
-        ipPosture: 'Section 3(p) Statutory Bar against patenting raw formulation. Process patents permitted for novel extraction parameters under Sec 3(d).',
-        absPosture: 'Mandatory NBA Section 6 filing required if utilizing Indian biological resources for commercial utilization or foreign export.',
-        description: 'Formulation cited in 1st Schedule classical texts. Licensed under Form 25D/26D.',
-        evidenceRequirements: ['1st Schedule Classical Text Citation', 'GMP Certificate Form 26E', 'Raw Material Authentication'],
+        ipPosture: 'Section 3(p) Statutory Bar: Raw formulation is in public domain classical texts. Only novel extraction parameters or synergistic delivery methods can seek process patents under Sec 3(d).',
+        absPosture: 'Section 40 Exemption applies for local Indian practitioners; Commercial utilization or export requires Form III intimation.',
+        description: 'Exact formulation referenced in 1st Schedule texts (Charaka, Sushruta, API). Fast-track manufacturing license granted without clinical trials.',
+        evidenceRequirements: ['1st Schedule Classical Text Citation', 'Schedule T GMP Certificate (Form 26E)', 'Raw Material Botanical Authentication'],
         confidence: 98
       };
     }
 
-    if (q2Extraction === 'STANDARDIZED' || q1ClassicalText === 'NO') {
+    if (primaryUse === 'FOOD') {
       return {
-        category: 'PROPRIETARY_MEDICINE',
-        title: 'Proprietary / Non-Classical Ayurvedic Product',
-        regulatoryBody: 'AYUSH State Licensing Authority / CDSCO (Sec 3(h) Drugs Act)',
-        ipPosture: 'Eligible for Patent Protection (Synergistic combination / Process Patent under Sec 3(d)). Requires TKDL prior-art clearance.',
-        absPosture: 'Mandatory Access & Benefit Sharing (ABS) compliance & Form III approval under Biological Diversity Act.',
-        description: 'Patentable proprietary extract or synergistic combination with proven therapeutic efficacy.',
-        evidenceRequirements: ['HPLC Standardized Bioactive Marker Data', 'Safety Toxicity Report', 'NBA Form III Approval'],
-        confidence: 94 + extraConf
+        category: 'AYURVEDA_AAHAR',
+        title: 'Ayurveda-Aahar (FSSAI Botanical Food Supplement 2022)',
+        regulatoryBody: 'Food Safety and Standards Authority of India (FSSAI)',
+        ipPosture: 'Composition patent barred under Sec 3(e) unless unexpected synergistic functional dietary efficacy is demonstrated.',
+        absPosture: 'Exempted under BD Act Sec 40 if herbs are officially notified normally traded commodities (NTAC).',
+        description: 'Botanical dietary supplement regulated under FSSAI Ayurveda-Aahar Regulations 2022. Disease treatment claims strictly prohibited.',
+        evidenceRequirements: ['FSSAI Schedule IV Heavy Metal & Pesticide Assay', 'No-Disease-Claim Label Clearance', 'Nutritional Profile Panel'],
+        confidence: 92 + extraConf
       };
     }
 
-    if (q3PrimaryUse === 'FOOD') {
+    if (extraction === 'PURIFIED' || clinicalData === 'YES') {
       return {
-        category: 'AYURVEDA_AAHAR',
-        title: 'Ayurveda-Aahar (FSSAI Botanical Food Supplement)',
-        regulatoryBody: 'Food Safety and Standards Authority of India (FSSAI Regulations 2022)',
-        ipPosture: 'Formulation patent barred under Sec 3(e) unless unexpected synergistic functional food efficacy is established.',
-        absPosture: 'Exempted under BD Act Sec 40 if biological resource is traded as a commodity.',
-        description: 'Food supplement regulated under Ayurveda-Aahar safety and labeling standards.',
-        evidenceRequirements: ['FSSAI Schedule IV Safety Test', 'Label Claim Clearance', 'Heavy Metal & Pesticide Assay'],
+        category: 'PHYTOPHARMACEUTICAL',
+        title: 'Phytopharmaceutical Drug (CDSCO Rule 122-E)',
+        regulatoryBody: 'Central Drugs Standard Control Organization (CDSCO New Drugs Division)',
+        ipPosture: 'High Patentability (Product & Process Patents under Sec 2(1)(j)). Equivalent to standard pharmaceutical molecule protection.',
+        absPosture: 'Mandatory NBA Form III Prior Approval under Section 6 of Biological Diversity Act 2023.',
+        description: 'Purified bioactive fraction with identified chemical markers requiring Phase I-III clinical trial validation.',
+        evidenceRequirements: ['Phase I-III Human Clinical Trial Data', 'CDSCO Subject Expert Committee (SEC) Review', 'Structure Elucidation (NMR, LC-MS/MS)'],
         confidence: 91 + extraConf
       };
     }
 
+    // Default Proprietary Medicine
     return {
-      category: 'PHYTOPHARMACEUTICAL',
-      title: 'Phytopharmaceutical Drug (CDSCO New Drug Route)',
-      regulatoryBody: 'Central Drugs Standard Control Organization (CDSCO Rule 122E)',
-      ipPosture: 'Full Patentability (Product & Process Patent). Equivalent to small-molecule pharmaceutical IP protection.',
-      absPosture: 'NBA Form III Prior Approval mandatory for all commercial extraction and R&D.',
-      description: 'Purified botanical fraction requiring Phase I-III clinical trial validation.',
-      evidenceRequirements: ['Phase I-III Clinical Trial Data', 'CDSCO SEC Panel Review', 'Structure Elucidation (NMR/MS)'],
-      confidence: 89 + extraConf
+      category: 'PROPRIETARY_MEDICINE',
+      title: 'Proprietary Ayurvedic Medicine (Sec 3(h) / SLA Rule 158-B)',
+      regulatoryBody: 'State Licensing Authority (AYUSH SLA) & CDSCO',
+      ipPosture: 'Patent Eligible under Sec 3(d) and 3(e) with empirical synergistic bio-efficacy data. Must clear TKDL prior-art citation screening.',
+      absPosture: 'Mandatory Access & Benefit Sharing (ABS) compliance & Form III pre-approval if exporting or utilizing proprietary extraction.',
+      description: 'Modified classical recipe or novel standardized botanical extract blend. Requires proof of non-obvious synergistic efficacy.',
+      evidenceRequirements: ['HPLC Bioactive Fingerprinting & Marker Assay', 'Acute & Sub-acute Safety Toxicity Study', 'NBA Form III Prior Approval'],
+      confidence: 95 + extraConf
     };
   };
 
-  const handleReset = () => {
-    setStep(1);
-    setQ1ClassicalText(null);
-    setQ2Extraction(null);
-    setQ3PrimaryUse(null);
-    setQ4ClinicalData(null);
-  };
-
-  const finalResult = calculateCategory();
+  const result = calculateResult();
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-lg text-slate-950 space-y-6 w-full relative overflow-hidden">
-      {/* Google 4-Color Ambient Rainbow Halo Glow */}
-      <div className="absolute -top-20 -right-20 w-80 h-80 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/12 via-[#fbbc05]/12 to-[#34a853]/15 blur-3xl pointer-events-none rounded-full" />
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xl text-slate-950 space-y-6 w-full relative overflow-hidden">
+      {/* Ambient Glow */}
+      <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-r from-blue-500/10 via-emerald-500/10 to-amber-500/10 blur-3xl pointer-events-none rounded-full" />
 
-      <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4 relative z-10">
+      {/* Header with Quick Reset */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 relative z-10">
         <div>
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-slate-950" />
-            <h2 className="text-lg font-bold font-display text-slate-950">
-              Ayurvedic Product Regulatory Classifier
-            </h2>
+            <div className="w-8 h-8 rounded-xl bg-slate-950 text-white flex items-center justify-center font-bold shadow-xs">
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-black font-display text-slate-950 tracking-tight">
+                Ayurvedic Regulatory & IP Classifier
+              </h2>
+              <p className="text-[11px] text-slate-600 font-medium">
+                Instant statutory pathway routing under AYUSH SLA Rule 158-B, CDSCO, or FSSAI.
+              </p>
+              {currentQuery && (
+                <div className="mt-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-start gap-2.5">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded shrink-0">
+                    Active Formulation
+                  </span>
+                  <span className="text-slate-800 font-medium leading-relaxed">
+                    {currentQuery}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-slate-600 mt-1">
-            Minimum clarifying questions engine to classify your formulation and determine IP & ABS posture.
-          </p>
         </div>
+
         <button
-          onClick={handleReset}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-950 border border-slate-300 hover:bg-slate-200 transition-all cursor-pointer"
+          onClick={() => applyPreset('PROPRIETARY')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition-all cursor-pointer border border-slate-300 self-start sm:self-auto"
         >
-          Reset Classifier
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Reset Defaults</span>
         </button>
       </div>
 
-      {/* Step Progress Bar */}
-      <div className="flex items-center gap-2 mb-8 relative z-10">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className={`flex-1 h-1.5 rounded-full transition-all ${
-              step >= i ? 'bg-slate-950' : 'bg-slate-200'
+      {/* Statutory Classification Archetype Presets */}
+      <div className="space-y-2.5 relative z-10">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-700" />
+          <span>Statutory Classification Presets:</span>
+        </span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <button
+            onClick={() => applyPreset('CLASSICAL')}
+            title="Direct classical recipe from 1st Schedule texts (AYUSH Form 25D). Barred under Patents Act Sec 3(p)."
+            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative group ${
+              classicalText === 'YES' && extraction === 'TRADITIONAL'
+                ? 'bg-slate-950 text-white border-slate-950 shadow-md ring-2 ring-slate-900/20'
+                : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200 hover:border-slate-400 shadow-xs'
             }`}
-          />
-        ))}
+          >
+            <div className="flex items-center gap-1.5">
+              <BookOpen className={`w-3.5 h-3.5 shrink-0 ${classicalText === 'YES' && extraction === 'TRADITIONAL' ? 'text-slate-300' : 'text-slate-600'}`} />
+              <span className="text-xs font-bold truncate">Classical Medicine</span>
+            </div>
+            <span className="text-[10px] opacity-80 block mt-1">AYUSH SLA Form 25D</span>
+          </button>
+
+          <button
+            onClick={() => applyPreset('PROPRIETARY')}
+            title="Standardized botanical extract blend. Patent eligible under Section 3(d)/3(e) with empirical synergy."
+            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative group ${
+              classicalText === 'NO' && extraction === 'STANDARDIZED' && primaryUse === 'MEDICINE'
+                ? 'bg-slate-950 text-white border-slate-950 shadow-md ring-2 ring-slate-900/20'
+                : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200 hover:border-slate-400 shadow-xs'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <FlaskConical className={`w-3.5 h-3.5 shrink-0 ${classicalText === 'NO' && extraction === 'STANDARDIZED' && primaryUse === 'MEDICINE' ? 'text-slate-300' : 'text-slate-600'}`} />
+              <span className="text-xs font-bold truncate">Proprietary Extract</span>
+            </div>
+            <span className="text-[10px] opacity-80 block mt-1">Patents Act Sec 3(d)/3(e)</span>
+          </button>
+
+          <button
+            onClick={() => applyPreset('AAHAR')}
+            title="Botanical health food supplement under FSSAI 2022 regulations. Disease cure claims strictly prohibited."
+            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative group ${
+              primaryUse === 'FOOD'
+                ? 'bg-slate-950 text-white border-slate-950 shadow-md ring-2 ring-slate-900/20'
+                : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200 hover:border-slate-400 shadow-xs'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Leaf className={`w-3.5 h-3.5 shrink-0 ${primaryUse === 'FOOD' ? 'text-slate-300' : 'text-slate-600'}`} />
+              <span className="text-xs font-bold truncate">Ayurveda-Aahar</span>
+            </div>
+            <span className="text-[10px] opacity-80 block mt-1">FSSAI Regulations 2022</span>
+          </button>
+
+          <button
+            onClick={() => applyPreset('PHYTO')}
+            title="Purified bioactive fraction (>90%) with identified chemical markers and Phase I-III trials under CDSCO Rule 122-E."
+            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative group ${
+              extraction === 'PURIFIED' && clinicalData === 'YES'
+                ? 'bg-slate-950 text-white border-slate-950 shadow-md ring-2 ring-slate-900/20'
+                : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200 hover:border-slate-400 shadow-xs'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Pill className={`w-3.5 h-3.5 shrink-0 ${extraction === 'PURIFIED' && clinicalData === 'YES' ? 'text-slate-300' : 'text-slate-600'}`} />
+              <span className="text-xs font-bold truncate">Phytopharmaceutical</span>
+            </div>
+            <span className="text-[10px] opacity-80 block mt-1">CDSCO Rule 122-E Drug</span>
+          </button>
+        </div>
       </div>
 
-      {/* Questions Flow */}
-      {step === 1 && (
-        <div className="space-y-4 relative z-10">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-xs font-mono text-slate-950 font-bold uppercase tracking-wider">Question 1 of 4</span>
-            <h3 className="text-base font-bold text-slate-950 mt-1 mb-2">
-              Is your formulation and preparation method drawn directly from a First-Schedule authoritative text?
-            </h3>
-            <p className="text-xs text-slate-600 mb-4">
-              First Schedule texts include Caraka Samhita, Susruta Samhita, Sharangdhara Samhita, Ashtanga Hridaya, etc., specified in the Drugs & Cosmetics Act 1940.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                onClick={() => { setQ1ClassicalText('YES'); setStep(2); }}
-                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <div className="flex items-center justify-between font-bold text-sm text-slate-950 relative z-10">
-                  <span>Yes — Exact Classical Text Formula</span>
-                  <ArrowRight className="w-4 h-4 text-slate-950 transition-transform group-hover:translate-x-1" />
-                </div>
-                <p className="text-xs text-slate-600 mt-1 relative z-10">E.g. Classical Chyawanprash, Triphala Churna, Ashwagandharishta.</p>
-              </button>
-
-              <button
-                onClick={() => { setQ1ClassicalText('NO'); setStep(2); }}
-                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <div className="flex items-center justify-between font-bold text-sm text-slate-950 relative z-10">
-                  <span>No — Modified / Proprietary / Novel Formula</span>
-                  <ArrowRight className="w-4 h-4 text-slate-950 transition-transform group-hover:translate-x-1" />
-                </div>
-                <p className="text-xs text-slate-600 mt-1 relative z-10">E.g. Standardized capsule, nano-emulsion, modern bioactive blend.</p>
-              </button>
-            </div>
+      {/* 4 Interactive Dimension Selectors with Contextual Tooltip Hints */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+        {/* 1. Formula Origin */}
+        <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-900 block">
+              1. Formulation Source Authority
+            </label>
+            <span className="text-[10px] text-slate-500 font-medium">Hover for hint</span>
           </div>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="space-y-4 relative z-10">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-xs font-mono text-slate-950 font-bold uppercase tracking-wider">Question 2 of 4</span>
-            <h3 className="text-base font-bold text-slate-950 mt-1 mb-2">
-              What is the extraction & processing technique used?
-            </h3>
-            <p className="text-xs text-slate-600 mb-4">
-              The degree of processing determines whether it falls under traditional AYUSH SLA licensing or CDSCO Phytopharmaceutical route.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                onClick={() => { setQ2Extraction('TRADITIONAL'); setStep(3); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block mb-1 relative z-10">Traditional Aqueous / Decoction</span>
-                <span className="text-xs text-slate-600 relative z-10">Kwatha, Churna, Asava, Arishta, Taila.</span>
-              </button>
-
-              <button
-                onClick={() => { setQ2Extraction('STANDARDIZED'); setStep(3); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block mb-1 relative z-10">Standardized Solvent Extract</span>
-                <span className="text-xs text-slate-600 relative z-10">Hydro-alcoholic extract with quantified active markers (HPLC).</span>
-              </button>
-
-              <button
-                onClick={() => { setQ2Extraction('PURIFIED'); setStep(3); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block mb-1 relative z-10">Purified Fraction / Isolate</span>
-                <span className="text-xs text-slate-600 relative z-10">95%+ purified bioactive fraction with defined chemical structures.</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="space-y-4 relative z-10">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-xs font-mono text-slate-950 font-bold uppercase tracking-wider">Question 3 of 4</span>
-            <h3 className="text-base font-bold text-slate-950 mt-1 mb-2">
-              What is the primary intended market category & label claim?
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                onClick={() => { setQ3PrimaryUse('MEDICINE'); setStep(4); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block mb-1 relative z-10">Medicinal Therapeutic Drug</span>
-                <span className="text-xs text-slate-600 relative z-10">Claimed treatment of disease / disorder.</span>
-              </button>
-
-              <button
-                onClick={() => { setQ3PrimaryUse('FOOD'); setStep(4); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block mb-1 relative z-10">Ayurveda-Aahar / Food Supplement</span>
-                <span className="text-xs text-slate-600 relative z-10">FSSAI food regulation (non-medicinal claim).</span>
-              </button>
-
-              <button
-                onClick={() => { setQ3PrimaryUse('COSMETIC'); setStep(4); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block mb-1 relative z-10">Ayurvedic Cosmetic</span>
-                <span className="text-xs text-slate-600 relative z-10">Topical beauty, skin & hair care product.</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="space-y-4 relative z-10">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="text-xs font-mono text-slate-950 font-bold uppercase tracking-wider">Question 4 of 4</span>
-            <h3 className="text-base font-bold text-slate-950 mt-1 mb-2">
-              Do you possess human clinical trial data (Phase I-III)?
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <button
-                onClick={() => { setQ4ClinicalData('YES'); setStep(5); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block relative z-10">Yes — Clinical Evidence Available</span>
-              </button>
-
-              <button
-                onClick={() => { setQ4ClinicalData('NO'); setStep(5); }}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-400 text-left transition-all relative overflow-hidden group cursor-pointer shadow-xs"
-              >
-                {/* Google Rainbow Hover Halo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                <span className="font-bold text-sm text-slate-950 block relative z-10">No — Traditional / Pre-clinical Data Only</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Outcome Card */}
-      {step >= 4 && (
-        <div className="mt-6 p-5 rounded-2xl bg-slate-50 border border-slate-200 relative overflow-hidden group hover:border-slate-400 hover:shadow-md transition-all">
-          {/* Google Rainbow Hover Halo */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-          <div className="flex items-center justify-between mb-4 relative z-10">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-950 font-mono text-xs border border-slate-300 font-bold">
-                {finalResult.confidence}% Classification Confidence
-              </span>
-              <span className="text-xs text-slate-600">Regulator: <strong className="text-slate-950 font-bold">{finalResult.regulatoryBody}</strong></span>
-            </div>
+          <div className="grid grid-cols-2 gap-1.5">
             <button
-              onClick={() => onClassifyComplete(finalResult)}
-              className="px-4 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer border border-slate-950"
+              onClick={() => setClassicalText('YES')}
+              title="Direct formulation from First Schedule texts (e.g. Charaka, Sushruta, API). Public domain TKDL prior art."
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                classicalText === 'YES'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
             >
-              <span>Apply to Assistant</span>
-              <ArrowRight className="w-3.5 h-3.5 text-white" />
+              Exact 1st Schedule Text
+            </button>
+            <button
+              onClick={() => setClassicalText('NO')}
+              title="Novel proprietary formulation, altered ingredient ratio, or modified classical recipe developed in-house."
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                classicalText === 'NO'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Proprietary / Modified
             </button>
           </div>
+          <p className="text-[10px] text-slate-500 font-medium">
+            First Schedule texts include Caraka, Susruta, Sharangdhara Samhita (Drugs Act).
+          </p>
+        </div>
 
-          <h3 className="text-lg font-bold text-slate-950 font-display mb-2 relative z-10">{finalResult.title}</h3>
-          <p className="text-xs text-slate-700 leading-relaxed mb-4 relative z-10">{finalResult.description}</p>
+        {/* 2. Extraction Technique */}
+        <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-900 block">
+              2. Extraction & Processing Depth
+            </label>
+            <span className="text-[10px] text-slate-500 font-medium">Hover for hint</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              onClick={() => setExtraction('TRADITIONAL')}
+              title="Traditional aqueous decoction (Kwath), raw herbal churna, or classical medicated oil/ghee."
+              className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all text-center cursor-pointer ${
+                extraction === 'TRADITIONAL'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Traditional Aqueous
+            </button>
+            <button
+              onClick={() => setExtraction('STANDARDIZED')}
+              title="Enriched hydro-alcoholic extract standardized to active chemical markers (HPLC). Enables process patent claims."
+              className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all text-center cursor-pointer ${
+                extraction === 'STANDARDIZED'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Standardized (HPLC)
+            </button>
+            <button
+              onClick={() => setExtraction('PURIFIED')}
+              title="Purified bioactive fraction (>95% purity), qualifying for CDSCO Phytopharmaceutical drug pipeline."
+              className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all text-center cursor-pointer ${
+                extraction === 'PURIFIED'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Purified Isolate
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium">
+            Standardization enables process patent claims under Section 3(d).
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs">
-              <span className="text-xs font-bold text-slate-950 flex items-center gap-1.5 mb-2">
-                <ShieldCheck className="w-4 h-4 text-slate-950" />
-                IP Posture Impact
-              </span>
-              <p className="text-xs text-slate-700 leading-relaxed">{finalResult.ipPosture}</p>
-            </div>
+        {/* 3. Primary Market Claim */}
+        <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-900 block">
+              3. Intended Market & Label Claim
+            </label>
+            <span className="text-[10px] text-slate-500 font-medium">Hover for hint</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              onClick={() => setPrimaryUse('MEDICINE')}
+              title="Indicated for therapeutic mitigation or disease cure. Mandates AYUSH State Licensing Authority or CDSCO drug approval."
+              className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all text-center cursor-pointer ${
+                primaryUse === 'MEDICINE'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Therapeutic Drug
+            </button>
+            <button
+              onClick={() => setPrimaryUse('FOOD')}
+              title="Marketed as daily botanical dietary supplement under FSSAI Ayurveda-Aahar Regulations 2022. Medicinal claims prohibited."
+              className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all text-center cursor-pointer ${
+                primaryUse === 'FOOD'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Food / Aahar
+            </button>
+            <button
+              onClick={() => setPrimaryUse('COSMETIC')}
+              title="Formulated for external aesthetic skin, hair, or oral care under Drugs & Cosmetics Rules Part VIII."
+              className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition-all text-center cursor-pointer ${
+                primaryUse === 'COSMETIC'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Topical Cosmetic
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium">
+            Food supplements fall under FSSAI; therapeutic claims mandate AYUSH SLA.
+          </p>
+        </div>
 
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs">
-              <span className="text-xs font-bold text-slate-950 flex items-center gap-1.5 mb-2">
-                <AlertCircle className="w-4 h-4 text-slate-950" />
-                ABS & Biodiversity Posture
-              </span>
-              <p className="text-xs text-slate-700 leading-relaxed">{finalResult.absPosture}</p>
-            </div>
+        {/* 4. Human Clinical Evidence */}
+        <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-900 block">
+              4. Human Clinical Trial Evidence
+            </label>
+            <span className="text-[10px] text-slate-500 font-medium">Hover for hint</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => setClinicalData('YES')}
+              title="Supported by Phase I safety and Phase II/III randomized clinical trials proving therapeutic efficacy."
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                clinicalData === 'YES'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Clinical Data Available
+            </button>
+            <button
+              onClick={() => setClinicalData('NO')}
+              title="Supported by classical historical monograph use or in-vitro laboratory studies without human clinical trials."
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                clinicalData === 'NO'
+                  ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              Pre-Clinical / Traditional
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium">
+            Clinical trials qualify formulation for Phytopharmaceutical status (CDSCO).
+          </p>
+        </div>
+      </div>
+
+      {/* Uncluttered, Executive Statutory Diagnostic Output Card */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50/90 border border-slate-200/90 shadow-sm space-y-5 relative z-10">
+        {/* Top Diagnostic Control Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-slate-950 text-white text-xs font-bold shadow-xs">
+              {result.confidence}% Match Confidence
+            </span>
+            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-900 border border-blue-200 text-xs font-semibold flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-blue-700" />
+              <span>Authority: <strong>{result.regulatoryBody}</strong></span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onClassifyComplete(result)}
+              className="px-4 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Apply to Current Audit</span>
+            </button>
+
+            {onSendToChat && (
+              <button
+                onClick={() => {
+                  const prompt = `Audit statutory patentability for a ${result.title} formulation utilizing standardized botanical extracts in India.`;
+                  onSendToChat(prompt);
+                }}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                title="Send to AI Assistant"
+              >
+                <Send className="w-3.5 h-3.5 text-white" />
+                <span>Test in Assistant</span>
+              </button>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Primary Classification Headline & Context */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+            <h3 className="text-base sm:text-lg font-black font-display text-slate-950 tracking-tight">
+              {result.title}
+            </h3>
+          </div>
+          <p className="text-xs text-slate-600 font-medium leading-relaxed pl-4 border-l-2 border-slate-200">
+            {result.description}
+          </p>
+        </div>
+
+        {/* Structured 2-Column Statutory Decision Matrix */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {/* Card 1: Intellectual Property & Patents Act */}
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                <Scale className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Patents Act 1970/2024 Posture</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                IP Clearance
+              </span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+              {result.ipPosture}
+            </p>
+          </div>
+
+          {/* Card 2: Biodiversity Act & ABS Compliance */}
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Biodiversity Act 2023 & ABS</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                NBA Compliance
+              </span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+              {result.absPosture}
+            </p>
+          </div>
+        </div>
+
+        {/* Structured Statutory Filing Checklist */}
+        <div className="space-y-2.5 pt-1 border-t border-slate-200">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-slate-600" />
+              <span>Mandatory Statutory Dossier Requirements:</span>
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">
+              {result.evidenceRequirements.length} documents required
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {result.evidenceRequirements.map((req, rIdx) => (
+              <div
+                key={rIdx}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-medium flex items-center gap-2 shadow-xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="truncate">{req}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

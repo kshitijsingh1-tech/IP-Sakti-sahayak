@@ -3,7 +3,7 @@
 > **Autonomous AYUSH Intellectual Property & Biodiversity Audit Engine**  
 > *Protecting AYUSH Innovation and Traditional Knowledge against Global Misappropriation.*
 
-IP-SAKTI Sahayak is an autonomous AI system designed for **Smart India Hackathon Problem Statement 26045** (Ministry of Ayush, Government of India). It addresses the systemic challenge where traditional Ayurvedic, Siddha, and Unani formulations face international patent squatting while Indian innovators struggle with complex statutory compliance across patents, biodiversity ABS duties, and drug regulations.
+IP-SAKTI Sahayak is an autonomous AI system designed for the Ministry of Ayush, Government of India. It addresses the systemic challenge where traditional Ayurvedic, Siddha, and Unani formulations face international patent squatting while Indian innovators struggle with complex statutory compliance across patents, biodiversity ABS duties, and drug regulations.
 
 The platform executes a parallel **4-agent RAG audit pipeline** in seconds, grounding every legal recommendation in the Patents Act 1970/2024, Biological Diversity Act 2002/2023, Traditional Knowledge Digital Library (TKDL) corpora, WIPO GRATK 2024 Treaty, and FSSAI Ayurveda-Aahar regulations.
 
@@ -232,11 +232,3 @@ ip-sakti/
 ## Legal Disclaimer
 
 IP-SAKTI Sahayak provides source-cited legal and regulatory information grounded in official statutory texts and traditional knowledge databases. This system does not provide formal legal advice. Users should consult a qualified Patent Agent or AYUSH IP Facilitator for official filings.
-
----
-
-## Hackathon Reference
-
-- **Problem Statement**: SIH 26045 (Smart India Hackathon 2024)
-- **Title**: Intellectual Property Rights & Biodiversity Protection for AYUSH Sector
-- **Ministry**: Ministry of Ayush, Government of India

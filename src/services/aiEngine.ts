@@ -38,39 +38,76 @@ export function classifyQueryIntent(userQuery: string): 'CONVERSATIONAL' | 'STAT
   return 'CONVERSATIONAL';
 }
 
-import { classifyQueryWithLLM } from './routerAgent';
+import { classifyQuerySmart, type RouteMode } from './routerAgent';
 
 /**
  * Advanced Dynamic Reasoning Engine for IP-SAKTI
- * Generates custom, context-aware legal & regulatory analysis for ANY user query.
+ * Uses Unified Smart Router to auto-detect response mode.
  */
 export async function analyzeQuery(
   userQuery: string,
   jurisdiction: Jurisdiction,
   lawYear: string = '2024'
 ): Promise<QueryResult> {
-  const classificationRes = await classifyQueryWithLLM(userQuery);
-  const intent = classificationRes.intent;
   const qLower = userQuery.toLowerCase().trim();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
-  if (intent === 'CONVERSATIONAL' || intent === 'STATUTORY_KNOWLEDGE') {
-    const infoResult = checkInformationalQuery(userQuery);
-    const desc = infoResult.isInformational && infoResult.explanation 
-      ? infoResult.explanation 
-      : 'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. I can help you audit botanical formulations, evaluate Section 3(p)/3(d) patentability, check TKDL prior art, and navigate NBA Form III compliance. How can I assist you with your project today?';
+  // 1. Always attempt live LLM backend execution first (/api/v1/audit handles all 4 modes dynamically)
+  try {
+    const response = await fetch(`${API_BASE}/api/v1/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: userQuery,
+        jurisdiction,
+        law_year: lawYear,
+      }),
+    });
 
+    if (response.ok) {
+      const data = await response.json();
+      return mapBackendResponseToQueryResult(data, userQuery, jurisdiction, lawYear);
+    }
+  } catch (err) {
+    console.warn('Backend /api/v1/audit call failed, using client fallback:', err);
+  }
+
+  // 2. Client fallback (only used if backend server is unreachable)
+  const routeResult = await classifyQuerySmart(userQuery);
+  const mode: RouteMode = routeResult.mode;
+
+  let desc = '';
+  let title = 'IP-SAKTI Guidance';
+  let nonAuditCategory: string = 'CONVERSATIONAL';
+
+  if (mode === 'CHAT') {
+    nonAuditCategory = 'CONVERSATIONAL';
+    title = 'Conversational Response';
+    desc = `I am IP-SAKTI Sahayak. To give you the best assistance on "${userQuery}", please ensure the local AI backend server is active at http://localhost:8000.`;
+  } else if (mode === 'GUIDE') {
+    nonAuditCategory = 'STATUTORY_INFORMATION';
+    title = 'Statutory Knowledge Guidance';
+    desc = `Statutory Guidance regarding "${userQuery}": Under the Indian Patents Act 1970/2024 and Biological Diversity Act 2023, queries on patentability, procedures, and traditional knowledge are evaluated against statutory provisions including Section 3(p) and Section 3(d). Please connect to the backend server for complete live AI synthesis.`;
+  } else {
+    // HYBRID
+    nonAuditCategory = 'HYBRID_GUIDANCE';
+    title = 'Patentability Guidance';
+    desc = `Regarding "${userQuery}":\n\nPatentability depends on novelty, inventive step, and industrial applicability under Patents Act 1970.\n\n💡 To run a full 4-Agent statutory audit, provide specific botanical ingredients and concentrations.`;
+  }
+
+  if (mode !== 'AUDIT') {
     return {
-      queryId: `conv-${Date.now()}`,
+      queryId: `${mode.toLowerCase()}-${Date.now()}`,
       userQuery,
       jurisdiction,
       classification: {
-        category: intent === 'STATUTORY_KNOWLEDGE' ? 'STATUTORY_INFORMATION' : 'CONVERSATIONAL',
-        title: (infoResult.isInformational && infoResult.topicTitle) ? infoResult.topicTitle : 'IP-SAKTI Guidance',
-        confidence: 100,
+        category: nonAuditCategory as import('../types').AyurvedicCategory,
+        title,
+        confidence: Math.round(routeResult.confidence * 100),
         description: desc,
-        regulatoryBody: 'Indian Patent Office & Ministry of Ayush',
+        regulatoryBody: mode === 'CHAT' ? '' : 'Indian Patent Office & Ministry of Ayush',
         evidenceRequirements: [],
-        ipPosture: 'Informational Guidance',
+        ipPosture: mode === 'CHAT' ? '' : 'Informational Guidance',
         absPosture: ''
       },
       ipMap: [],
@@ -94,32 +131,11 @@ export async function analyzeQuery(
         recommendedRoadmap: []
       },
       agentSteps: [],
-      citations: infoResult.citations || [],
+      citations: [],
       nodes: [],
       edges: [],
       legalDisclaimer: ''
     };
-  }
-
-  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
-  // Try fetching live 4-Agent RAG reasoning from FastAPI backend first
-  try {
-    const response = await fetch(`${API_BASE}/api/v1/audit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: userQuery,
-        jurisdiction,
-        law_year: lawYear,
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return mapBackendResponseToQueryResult(data, userQuery, jurisdiction, lawYear);
-    }
-  } catch (err) {
-    console.warn('Backend API offline, using client-side fallback reasoning engine:', err);
   }
 
   // Extract botanical/formulation keywords
@@ -533,12 +549,12 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
       kaniModelInsight: 'Kani Community / Jeevani Model Benchmark: Mandatory benefit-sharing arrangement under BD Act 2023.'
     },
     readinessPassport: {
-      overallScore: rp.overall_score || rp.overallScore || 70,
-      patentabilityScore: rp.patentability_score || rp.patentabilityScore || 65,
-      tkClearanceScore: rp.tk_clearance_score || rp.tkClearanceScore || 58,
-      absComplianceScore: rp.abs_compliance_score || rp.absComplianceScore || 75,
-      regulatoryReadinessScore: rp.regulatory_readiness_score || rp.regulatoryReadinessScore || 82,
-      exportReadinessScore: rp.export_readiness_score || rp.exportReadinessScore || 55,
+      overallScore: rp.overall_score !== undefined ? Number(rp.overall_score) : (rp.overallScore !== undefined ? Number(rp.overallScore) : 70),
+      patentabilityScore: rp.patentability_score !== undefined ? Number(rp.patentability_score) : (rp.patentabilityScore !== undefined ? Number(rp.patentabilityScore) : 65),
+      tkClearanceScore: rp.tk_clearance_score !== undefined ? Number(rp.tk_clearance_score) : (rp.tkClearanceScore !== undefined ? Number(rp.tkClearanceScore) : 58),
+      absComplianceScore: rp.abs_compliance_score !== undefined ? Number(rp.abs_compliance_score) : (rp.absComplianceScore !== undefined ? Number(rp.absComplianceScore) : 75),
+      regulatoryReadinessScore: rp.regulatory_readiness_score !== undefined ? Number(rp.regulatory_readiness_score) : (rp.regulatoryReadinessScore !== undefined ? Number(rp.regulatoryReadinessScore) : 82),
+      exportReadinessScore: rp.export_readiness_score !== undefined ? Number(rp.export_readiness_score) : (rp.exportReadinessScore !== undefined ? Number(rp.exportReadinessScore) : 55),
       criticalBlockers: rp.critical_blockers || rp.criticalBlockers || [],
       recommendedRoadmap: rp.recommended_roadmap || rp.recommendedRoadmap || [],
     },
@@ -552,188 +568,15 @@ export function mapBackendResponseToQueryResult(data: any, query: string, jurisd
 }
 
 /**
- * Detects whether a query is a general legal/statutory knowledge question
- * (e.g. "what is Patents Act 1970", "explain Section 3(d)", "what is TKDL")
- * and provides a detailed educational breakdown.
+ * Legacy stub: All intent classification and answering is now handled dynamically
+ * by the Unified Smart Router and Live LLM Backend.
  */
-export function checkInformationalQuery(userQuery: string): {
+export function checkInformationalQuery(_userQuery: string): {
   isInformational: boolean;
   topicTitle?: string;
   explanation?: string;
   citations?: SourceCitation[];
 } {
-  const qLower = userQuery.toLowerCase().trim();
-
-  const isQuestionPattern =
-    qLower.startsWith('what') ||
-    qLower.startsWith('how') ||
-    qLower.startsWith('why') ||
-    qLower.startsWith('when') ||
-    qLower.startsWith('where') ||
-    qLower.startsWith('who') ||
-    qLower.startsWith('is') ||
-    qLower.startsWith('are') ||
-    qLower.startsWith('can') ||
-    qLower.startsWith('could') ||
-    qLower.startsWith('does') ||
-    qLower.startsWith('do') ||
-    qLower.startsWith('should') ||
-    qLower.startsWith('explain') ||
-    qLower.startsWith('tell me') ||
-    qLower.startsWith('define') ||
-    qLower.includes('meaning') ||
-    qLower.includes('overview') ||
-    qLower.includes('details on') ||
-    qLower.includes('cost') ||
-    qLower.includes('fee') ||
-    qLower.includes('free') ||
-    qLower.includes('price') ||
-    qLower.includes('procedure') ||
-    qLower.includes('steps');
-
-  const mentionsKeyStatute =
-    qLower.includes('patents act') ||
-    qLower.includes('patent act') ||
-    qLower.includes('section 3') ||
-    qLower.includes('sec 3') ||
-    qLower.includes('biodiversity') ||
-    qLower.includes('bd act') ||
-    qLower.includes('nba') ||
-    qLower.includes('tkdl') ||
-    qLower.includes('form iii');
-
-  if (!isQuestionPattern && !mentionsKeyStatute) {
-    return { isInformational: false };
-  }
-
-  // Fees / Cost / Free filing questions
-  if (qLower.includes('free') || qLower.includes('cost') || qLower.includes('fee') || qLower.includes('price') || qLower.includes('charge')) {
-    return {
-      isInformational: true,
-      topicTitle: 'Patent Filing Fees & Subsidies in India (Patents Rules 2024)',
-      explanation: `Patent filing in India is NOT completely free, but the Indian Patent Office (CGPDTM) offers up to 80% statutory fee concessions for Startups, Small Entities, Educational Institutions, and Individual Inventors:
-
-1. Official Statutory Fee Schedule (Form 1 & Form 2 E-filing):
-   • Natural Person / Individual / Startup / Educational Institution: ₹1,600 per application.
-   • Small Entity: ₹4,000 per application.
-   • Large Business / Other Entities: ₹8,000 per application.
-
-2. Examination Fees (Form 18):
-   • Startups & Educational Institutions: ₹4,000 (80% discount compared to ₹20,000 for large entities).
-   • Expedited / Fast-Track Examination (Form 18A): Available for Startups & Female Applicants!
-
-3. AYUSH & Startup India Subsidies:
-   • DPIIT-registered AYUSH startups receive an 80% rebate on official filing fees and free IP facilitation support through government-empaneled Patent Facilitators under the SIPP Scheme.`,
-      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1]]
-    };
-  }
-
-  if (qLower.includes('ip sakti') || qLower.includes('ipsakti') || qLower.includes('ip-sakti') || qLower.includes('sakti') || qLower.includes('who are you') || qLower.includes('your name')) {
-    return {
-      isInformational: true,
-      topicTitle: 'IP-SAKTI Sahayak Platform Overview',
-      explanation: `IP-SAKTI Sahayak is an autonomous AI Decision & Governance Engine designed for Ayurvedic Intellectual Property Rights (IPR) and Biodiversity Compliance (SIH 26045).\n\nKey Capabilities:\n1. 4-Agent Statutory Audit: Parallel execution of Researcher, Auditor, Devil's Advocate, and Strategist agents evaluating Patents Act 1970 (Sec 3p/3d) and BD Act 2023.\n2. TKDL Prior-Art Overlap Radar: Checks formulations against Traditional Knowledge Digital Library references.\n3. NBA Form III Access & Benefit Sharing (ABS) Clearance: Determines pre-approval duties for Indian biological resources.\n4. Dual Operational Modes: Switch seamlessly between Guide Bot Mode (general guidance Q&A) and IP-SAKTI Audit Mode (full formulation audits).`,
-      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[3]]
-    };
-  }
-
-  // Patent Eligibility / Definition / How to patent questions
-  if (qLower.includes('what is patent') || qLower.includes('what is a patent') || qLower.includes('can i patent') || qLower.includes('is it patentable') || qLower.includes('how to patent') || qLower.includes('eligibility')) {
-    return {
-      isInformational: true,
-      topicTitle: 'What is a Patent? (Patents Act 1970 Overview)',
-      explanation: `A Patent is an exclusive statutory right granted by the Government of India (under the Patents Act, 1970) for an invention—a product or a process—that provides a new way of doing something or offers a new technical solution to a problem.
-
-Key Statutory Requirements for Patent Grant in India:
-1. Novelty (Section 2(1)(j)): The invention must not be published, disclosed in classical texts (TKDL), or known in the public domain anywhere in the world.
-2. Inventive Step / Non-Obviousness (Section 2(1)(ja)): Must involve technical advancement or economic significance beyond ordinary skill in the art.
-3. Industrial Applicability (Section 2(1)(ac)): Must be capable of being produced or used in an industry.
-4. Statutory Exclusions (AYUSH Framework):
-   • Section 3(p): Classical Ayurvedic formulations or simple herbal mixtures are barred as public domain traditional knowledge.
-   • Section 3(d): Purified botanical extracts must prove significant quantitative enhancement of therapeutic efficacy over crude extracts.`,
-      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1], MASTER_CITATIONS[4]]
-    };
-  }
-
-  if (qLower.includes('patents act') || qLower.includes('patent act')) {
-    return {
-      isInformational: true,
-      topicTitle: 'The Patents Act, 1970 (Amended 2024)',
-      explanation: `The Patents Act, 1970 is the primary statutory framework governing patent law in India. In the context of AYUSH, Herbal Formulations, and Bio-resources, the Act establishes strict criteria to protect traditional knowledge while encouraging non-obvious scientific innovation:
-
-1. Section 3(p): Explicitly excludes traditional knowledge or aggregations/duplications of known properties of traditional components from patentability.
-2. Section 3(d): Excludes mere discoveries of known substances unless a significant, non-obvious enhancement in therapeutic efficacy is proven.
-3. Mandatory Origin Disclosure (2024 Patent Rules): Requires patent applicants to disclose the exact geographical origin of biological materials and traditional knowledge used.
-4. WIPO GRATK Treaty 2024 Alignment: Ensures Indian patent filings align with international standards on genetic resources and associated traditional knowledge.`,
-      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1], MASTER_CITATIONS[3]]
-    };
-  }
-
-  if (qLower.includes('section 3(p)') || qLower.includes('sec 3p') || qLower.includes('section 3p')) {
-    return {
-      isInformational: true,
-      topicTitle: 'Section 3(p) of Patents Act 1970',
-      explanation: `Section 3(p) of the Patents Act 1970 states that "an invention which in effect is traditional knowledge or which is an aggregation or duplication of known properties of traditionally known component or components" is NOT patentable.
-
-Key Implications for AYUSH Formulations:
-• Classical formulations (e.g. Chyawanprash, Avipattikar Churna) are in the public domain and cannot be patented.
-• To overcome Section 3(p), an applicant must demonstrate novel extraction methods, proprietary synergistic ratios, or therapeutic bio-enhancement beyond simple mixing.`,
-      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[4]]
-    };
-  }
-
-  if (qLower.includes('section 3(d)') || qLower.includes('sec 3d') || qLower.includes('section 3d')) {
-    return {
-      isInformational: true,
-      topicTitle: 'Section 3(d) Efficacy Requirement',
-      explanation: `Section 3(d) of the Patents Act 1970 excludes the mere discovery of a new form of a known substance which does not result in the enhancement of the known efficacy of that substance.
-
-Key Takeaways:
-• Purified botanical extracts or isolated active fractions must provide quantitative clinical or bio-assay proof showing superior efficacy or bio-availability compared to raw herbal powders.`,
-      citations: [MASTER_CITATIONS[1]]
-    };
-  }
-
-  if (qLower.includes('biodiversity') || qLower.includes('bd act') || qLower.includes('nba') || qLower.includes('form iii')) {
-    return {
-      isInformational: true,
-      topicTitle: 'Biological Diversity Act, 2002 (Amended 2023) & NBA Form III',
-      explanation: `The Biological Diversity Act 2023 regulates access to Indian biological resources and associated traditional knowledge to prevent bio-piracy and ensure fair benefit-sharing.
-
-Key Provisions:
-1. Section 6(1) Approval: Anyone applying for IP rights (patents) inside or outside India based on Indian biological resources must obtain prior approval from the National Biodiversity Authority (NBA Chennai) via Form III.
-2. Access & Benefit Sharing (ABS): Applicants must contribute benefit-sharing fees (typically 0.1% to 5% of commercial turnover) to local Biodiversity Management Committees (BMCs) and indigenous communities.`,
-      citations: [MASTER_CITATIONS[2], MASTER_CITATIONS[3]]
-    };
-  }
-
-  if (qLower.includes('tkdl') || qLower.includes('traditional knowledge digital library')) {
-    return {
-      isInformational: true,
-      topicTitle: 'TKDL (Traditional Knowledge Digital Library)',
-      explanation: `TKDL is a digital repository created by CSIR and the Ministry of Ayush containing over 450,000 classical formulations from Ayurveda, Siddha, Unani, and Sowa-Rigpa texts translated into 5 international languages.
-
-Key Role:
-• International Patent Offices (USPTO, EPO, JPO, WIPO) use TKDL as prior art to reject invalid patent applications targeting traditional Indian medicine remedies.`,
-      citations: [MASTER_CITATIONS[4]]
-    };
-  }
-
-  if (isQuestionPattern && mentionsKeyStatute) {
-    return {
-      isInformational: true,
-      topicTitle: `Statutory Explanation: ${userQuery}`,
-      explanation: `IP-SAKTI 4-Agent Decision Engine Explanation for "${userQuery}":
-
-Under Indian IPR and AYUSH Regulatory law:
-• Government filing fees start at ₹1,600 for individuals/startups (Form 1 & 2).
-• Traditional knowledge formulations face Section 3(p) bars unless novel extraction methods or synergistic bio-efficacy enhancement (Sec 3d) are proven.
-• Mandatory National Biodiversity Authority (NBA Form III) clearance is required before patent grant.
-
-To audit a specific product composition, submit its botanical ingredients (e.g. "Ashwagandha hydro-alcoholic extract") for a 5-pillar statutory audit.`,
-      citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[2]]
-    };
-  }
-
   return { isInformational: false };
 }
+

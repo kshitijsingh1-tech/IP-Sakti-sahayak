@@ -67,8 +67,12 @@ def save_audit_session(audit_result: Dict[str, Any]) -> None:
         
         payload_str = json.dumps(audit_result)
 
+        cleaned_query = user_query.strip().lower()
         conn = _get_connection()
         with conn:
+            # Clean up prior instances of the exact same query to avoid duplicate flooding
+            if cleaned_query:
+                conn.execute("DELETE FROM audit_history WHERE TRIM(LOWER(user_query)) = ?", (cleaned_query,))
             conn.execute("""
                 INSERT OR REPLACE INTO audit_history 
                 (query_id, user_query, jurisdiction, law_year, timestamp, formatted_time, overall_score, category_title, full_payload)
@@ -81,7 +85,7 @@ def save_audit_session(audit_result: Dict[str, Any]) -> None:
 
 
 def get_all_audit_sessions(limit: int = 50) -> List[Dict[str, Any]]:
-    """Retrieves recent audit sessions from SQLite."""
+    """Retrieves recent audit sessions from SQLite, deduplicating identical queries."""
     try:
         init_db()
         conn = _get_connection()
@@ -91,11 +95,12 @@ def get_all_audit_sessions(limit: int = 50) -> List[Dict[str, Any]]:
             FROM audit_history
             ORDER BY timestamp DESC
             LIMIT ?
-        """, (limit,))
+        """, (limit * 2,))
         rows = cursor.fetchall()
         conn.close()
 
         items = []
+        seen_queries = set()
         for row in rows:
             try:
                 full_result = json.loads(row["full_payload"])
@@ -103,6 +108,12 @@ def get_all_audit_sessions(limit: int = 50) -> List[Dict[str, Any]]:
                 full_result = {}
 
             user_q = row["user_query"] or ""
+            norm_q = user_q.strip().lower()
+            if norm_q and norm_q in seen_queries:
+                continue
+            if norm_q:
+                seen_queries.add(norm_q)
+
             query_snippet = user_q[:36] + ("..." if len(user_q) > 36 else "") if user_q else row["category_title"]
 
             items.append({
@@ -115,6 +126,8 @@ def get_all_audit_sessions(limit: int = 50) -> List[Dict[str, Any]]:
                 "jurisdiction": row["jurisdiction"],
                 "result": full_result
             })
+            if len(items) >= limit:
+                break
         return items
     except Exception as e:
         logger.error("Failed to fetch audit history from SQLite: %s", e)
@@ -136,6 +149,21 @@ def get_audit_session_by_id(query_id: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error("Failed to fetch session %s: %s", query_id, e)
         return None
+
+
+def delete_audit_session(query_id: str) -> bool:
+    """Deletes a single audit session by its query_id."""
+    try:
+        init_db()
+        conn = _get_connection()
+        with conn:
+            cursor = conn.execute("DELETE FROM audit_history WHERE query_id = ?", (query_id,))
+            deleted = cursor.rowcount > 0
+        conn.close()
+        return deleted
+    except Exception as e:
+        logger.error("Failed to delete audit session %s: %s", query_id, e)
+        return False
 
 
 def clear_audit_history() -> bool:

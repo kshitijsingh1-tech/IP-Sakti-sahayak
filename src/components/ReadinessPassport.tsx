@@ -1,7 +1,7 @@
 import React from 'react';
 import type { IPReadinessPassport, QueryResult } from '../types';
-import { Globe, Award, Download, CheckCircle2, AlertCircle, Sparkles, FileCheck } from 'lucide-react';
-import { exportToPdf, exportToWord } from '../utils/exportUtils';
+import { Globe, Award, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { ExportRolloutButton } from './ExportRolloutButton';
 
 interface ReadinessPassportProps {
   passport: IPReadinessPassport;
@@ -86,25 +86,9 @@ export const ReadinessPassport: React.FC<ReadinessPassportProps> = ({ passport, 
           </p>
         </div>
         
-        {/* Export Buttons: PDF and Word */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => exportToPdf(dummyResult)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer border border-slate-950"
-            title="Download PDF Document"
-          >
-            <Download className="w-3.5 h-3.5 text-white" />
-            <span>PDF (.pdf)</span>
-          </button>
-
-          <button
-            onClick={() => exportToWord(dummyResult)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-300 shadow-xs cursor-pointer"
-            title="Download Microsoft Word Document"
-          >
-            <FileCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>Word (.docx)</span>
-          </button>
+        {/* Export Rollout Button: PDF and Word */}
+        <div className="shrink-0">
+          <ExportRolloutButton result={dummyResult} label="Export Passport" />
         </div>
       </div>
 

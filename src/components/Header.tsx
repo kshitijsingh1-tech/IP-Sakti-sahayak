@@ -1,7 +1,8 @@
 import React from 'react';
 import type { Jurisdiction } from '../types';
 import { AntigravityLogo } from './AntigravityLogo';
-import { Sparkles, Home, Rocket } from 'lucide-react';
+import { BrandName } from './BrandName';
+import { Sparkles, Home, HelpCircle } from 'lucide-react';
 
 import { TRANSLATIONS } from '../data/translations';
 import { triggerGoogleTranslate } from '../services/translator';
@@ -15,6 +16,7 @@ interface HeaderProps {
   onLawYearChange?: (year: string) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onOpenHelp?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLanguageChange,
   activeTab,
   onTabChange,
+  onOpenHelp,
 }) => {
   const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS['en'];
 
@@ -31,20 +34,15 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-50 px-2 sm:px-4 pt-3 pb-2 transition-all">
       {/* Floating Capsule Bar — Clean, Larger Font & Uncluttered Header */}
       <div className="max-w-7xl mx-auto rounded-full bg-white/95 backdrop-blur-2xl p-2 px-4 sm:px-5 border border-slate-200/90 shadow-xl flex items-center justify-between gap-3 overflow-hidden google-shimmer-border">
-        {/* Left Brand Identity — Prominent IP-SAKTI Sahayak */}
+        {/* Left Brand Identity — Prominent IP-SAKTI Sahayak Brand */}
         <div 
           onClick={() => onTabChange('hero')}
           className="flex items-center gap-3 cursor-pointer group shrink-0"
         >
-          <AntigravityLogo size={36} />
+          <AntigravityLogo size={38} />
 
           <div className="flex items-center gap-2">
-            <span className="text-lg sm:text-xl font-black font-display tracking-tight text-slate-950 group-hover:text-blue-600 transition-colors">
-              {t.appTitle}
-            </span>
-            <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 text-white font-black">
-              SIH 26045
-            </span>
+            <BrandName size="md" />
           </div>
         </div>
 
@@ -87,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'text-slate-700 hover:text-slate-950'
               }`}
             >
-              🇮🇳 IN
+              IN
             </button>
             <button
               onClick={() => onJurisdictionChange('INTERNATIONAL')}
@@ -97,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'text-slate-700 hover:text-slate-950'
               }`}
             >
-              🌐 Global
+              Global
             </button>
           </div>
 
@@ -117,13 +115,14 @@ export const Header: React.FC<HeaderProps> = ({
             <option value="ta">தமிழ்</option>
           </select>
 
-          {/* Primary Action Button */}
+          {/* Help Drawer Trigger Button */}
           <button
-            onClick={() => onTabChange('assistant')}
-            className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md hover:scale-105 transition-all"
+            onClick={onOpenHelp}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 hover:text-slate-950 font-bold text-xs border border-slate-300 transition-all cursor-pointer shadow-2xs"
+            title="Open Help & Statutory Knowledge Base"
           >
-            <Rocket className="w-4 h-4 text-white" />
-            <span className="hidden sm:inline">Launch Remote</span>
+            <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden sm:inline">Help</span>
           </button>
         </div>
       </div>

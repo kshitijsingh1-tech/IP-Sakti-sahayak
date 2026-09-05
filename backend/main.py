@@ -1,15 +1,23 @@
 """
 IP-SAKTI Sahayak — Autonomous AYUSH RAG Backend
 FastAPI + LangChain + pgvector + Groq LLM
-SIH Problem Statement 26045
 """
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List
 import os
+import sys
 import time
+from pathlib import Path
 from dotenv import load_dotenv
+
+_backend_dir = str(Path(__file__).resolve().parent)
+_root_dir = str(Path(__file__).resolve().parent.parent)
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 load_dotenv()
 
@@ -26,7 +34,7 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +46,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 class AuditRequest(BaseModel):
-    query: str = Field(..., min_length=10, description="Formulation query in English or Hindi")
+    query: str = Field(..., min_length=1, description="Formulation or statutory query")
     jurisdiction: str = Field(default="INDIA", description="INDIA or INTERNATIONAL")
     law_year: str = Field(default="2024", description="Law version year e.g. 2024")
     language: str = Field(default="en", description="Response language: en | hi | sa | ta")
@@ -207,27 +215,88 @@ class ClassifyRequest(BaseModel):
     query: str
 
 class ClassifyResponse(BaseModel):
-    intent: str
+    mode: str
+    confidence: float
     reason: str
+    entities: dict = {}
+    # Legacy compat
+    intent: str = ""
 
 @app.post("/api/v1/classify", response_model=ClassifyResponse, tags=["Classification"])
 async def classify_query(request: ClassifyRequest):
     """
-    Zero-Shot LLM Router Agent endpoint:
-    Classifies any natural language query dynamically into:
-      - CONVERSATIONAL
-      - STATUTORY_KNOWLEDGE
-      - FORMULATION_AUDIT
+    Unified Smart Router Agent endpoint:
+    Auto-classifies any natural language query into:
+      - CHAT (greetings, meta)
+      - GUIDE (knowledge Q&A)
+      - HYBRID (ambiguous composition + question)
+      - AUDIT (full formulation audit)
     """
     try:
         try:
-            from backend.services.router_agent import classify_query_intent_llm
+            from backend.services.router_agent import classify_intent
         except ImportError:
-            from services.router_agent import classify_query_intent_llm
+            from services.router_agent import classify_intent
 
-        return await classify_query_intent_llm(request.query)
+        result = await classify_intent(request.query)
+        mode = result.get("mode", "HYBRID")
+        mode_to_intent = {"CHAT": "CONVERSATIONAL", "GUIDE": "STATUTORY_KNOWLEDGE", "HYBRID": "STATUTORY_KNOWLEDGE", "AUDIT": "FORMULATION_AUDIT"}
+        return {
+            "mode": mode,
+            "confidence": result.get("confidence", 0.5),
+            "reason": result.get("reason", ""),
+            "entities": result.get("entities", {}),
+            "intent": mode_to_intent.get(mode, "FORMULATION_AUDIT")
+        }
     except Exception as e:
-        return {"intent": "FORMULATION_AUDIT", "reason": f"Fallback error: {str(e)}"}
+        return {"mode": "HYBRID", "confidence": 0.3, "reason": f"Fallback error: {str(e)}", "entities": {}, "intent": "STATUTORY_KNOWLEDGE"}
+
+
+# ---------------------------------------------------------------------------
+# Audio Transcription Endpoint — Groq Whisper-large-v3-turbo
+# ---------------------------------------------------------------------------
+
+@app.post("/api/v1/audio/transcribe", tags=["Audio"])
+async def transcribe_audio(file: UploadFile = File(...), language: Optional[str] = "en"):
+    """
+    Transcribes audio recording using Groq Whisper-large-v3-turbo.
+    Accepts webm, wav, mp3, ogg, mp4 audio blobs from frontend.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured on server")
+
+    contents = await file.read()
+    if not contents or len(contents) < 50:
+        return {"text": ""}
+
+    import httpx
+    whisper_url = "https://api.groq.com/openai/v1/audio/transcriptions"
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    filename = file.filename or "recording.webm"
+    files = {"file": (filename, contents, file.content_type or "audio/webm")}
+    data = {
+        "model": "whisper-large-v3-turbo",
+        "response_format": "json"
+    }
+    if language and language.startswith("hi"):
+        data["language"] = "hi"
+    elif language:
+        data["language"] = "en"
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(whisper_url, headers=headers, files=files, data=data)
+            if resp.status_code != 200:
+                print(f"[Whisper Error] {resp.status_code}: {resp.text}")
+                raise HTTPException(status_code=resp.status_code, detail=f"Whisper transcription failed: {resp.text}")
+            
+            result = resp.json()
+            return {"text": result.get("text", "").strip()}
+    except httpx.RequestError as exc:
+        print(f"[Whisper Network Error] {exc}")
+        raise HTTPException(status_code=503, detail=f"Groq Whisper connection failed: {str(exc)}")
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +373,18 @@ async def delete_history():
 
     success = clear_audit_history()
     return {"status": "ok", "cleared": success}
+
+
+@app.delete("/api/v1/history/{query_id}", tags=["History"])
+async def delete_single_history(query_id: str):
+    """Deletes a single audit session from SQLite database."""
+    try:
+        from backend.services.history_db import delete_audit_session
+    except ImportError:
+        from services.history_db import delete_audit_session
+
+    success = delete_audit_session(query_id)
+    return {"status": "ok", "deleted": success, "query_id": query_id}
 
 
 # ---------------------------------------------------------------------------

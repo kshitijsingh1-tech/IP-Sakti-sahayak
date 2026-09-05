@@ -8,7 +8,8 @@ export type AyurvedicCategory =
   | 'AYURVEDA_AAHAR' 
   | 'COSMETIC'
   | 'STATUTORY_INFORMATION'
-  | 'CONVERSATIONAL';
+  | 'CONVERSATIONAL'
+  | 'HYBRID_GUIDANCE';
 
 export type IPRightType = 
   | 'PATENT' 

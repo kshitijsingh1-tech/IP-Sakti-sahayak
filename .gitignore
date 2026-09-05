@@ -60,6 +60,8 @@ logs/
 backend/logs/
 *.sqlite
 *.db
+scratch/
+backend/scratch/
 
 # Operating System & IDE
 .DS_Store

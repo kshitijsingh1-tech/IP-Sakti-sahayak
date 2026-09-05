@@ -17,7 +17,14 @@ import os
 import asyncio
 import logging
 from typing import Optional
+from pathlib import Path
+from dotenv import load_dotenv
 
+# Reliably load backend/.env first, then root .env
+_backend_env = Path(__file__).resolve().parent.parent / ".env"
+if _backend_env.exists():
+    load_dotenv(_backend_env)
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -122,42 +129,78 @@ class DirectGroqLLM:
             content = getattr(msg, "content", str(msg))
             payload_messages.append({"role": role, "content": content})
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            for attempt in range(4):
-                try:
-                    resp = await client.post(
-                        url,
-                        headers={
-                            "Authorization": f"Bearer {self.api_key}",
-                            "Content-Type": "application/json",
-                            "User-Agent": "IP-SAKTI/1.0"
-                        },
-                        json={
-                            "model": self.model,
-                            "messages": payload_messages,
-                            "max_tokens": 1500,
-                            "temperature": 0.1
-                        }
-                    )
-                    if resp.status_code == 429 and attempt < 3:
-                        wait_sec = 1.5 * (attempt + 1)
-                        logger.warning("Groq rate limit 429 hit. Retrying in %.1fs (attempt %d)...", wait_sec, attempt + 1)
-                        await asyncio.sleep(wait_sec)
-                        continue
-                    resp.raise_for_status()
-                    data = resp.json()
-                    content = data["choices"][0]["message"]["content"]
+        models_to_try = [
+            self.model,
+            "qwen/qwen3.6-27b",
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b"
+        ]
+        # Deduplicate while preserving order
+        seen = set()
+        models_to_try = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
-                    class LLMResponse:
-                        def __init__(self, text):
-                            self.content = text
-                    return LLMResponse(content)
-                except httpx.HTTPStatusError as err:
-                    if err.response.status_code == 429 and attempt < 3:
-                        wait_sec = 1.5 * (attempt + 1)
-                        await asyncio.sleep(wait_sec)
-                        continue
-                    raise err
+        async with httpx.AsyncClient(timeout=35.0) as client:
+            for model_candidate in models_to_try:
+                for attempt in range(2):
+                    try:
+                        resp = await client.post(
+                            url,
+                            headers={
+                                "Authorization": f"Bearer {self.api_key}",
+                                "Content-Type": "application/json",
+                                "User-Agent": "IP-SAKTI/1.0"
+                            },
+                            json={
+                                "model": model_candidate,
+                                "messages": payload_messages,
+                                "max_tokens": 1500,
+                                "temperature": 0.1
+                            }
+                        )
+                        if resp.status_code == 429:
+                            err_text = resp.text.lower()
+                            # Daily limit (TPD / RPD) will not reset in a few seconds - skip immediately to next model
+                            if "per day" in err_text or "tpd" in err_text or "rpd" in err_text:
+                                logger.warning("Groq daily quota reached on %s. Switching immediately to next model candidate.", model_candidate)
+                                break
+                            
+                            # Minute-based rate limit: check retry-after header (typically 100ms - 1s)
+                            retry_hdr = resp.headers.get("retry-after")
+                            wait_sec = 0.5
+                            if retry_hdr:
+                                try:
+                                    wait_sec = min(float(retry_hdr), 2.0)
+                                except (ValueError, TypeError):
+                                    pass
+                            logger.warning("Groq minute rate limit 429 on %s. Retrying in %.2fs...", model_candidate, wait_sec)
+                            await asyncio.sleep(wait_sec)
+                            continue
+
+                        resp.raise_for_status()
+                        data = resp.json()
+                        content = data["choices"][0]["message"]["content"]
+
+                        class LLMResponse:
+                            def __init__(self, text):
+                                self.content = text
+                        return LLMResponse(content)
+                    except httpx.HTTPStatusError as err:
+                        if err.response.status_code == 429:
+                            err_text = err.response.text.lower()
+                            if "per day" in err_text or "tpd" in err_text or "rpd" in err_text:
+                                logger.warning("Groq daily quota reached on %s. Skipping model.", model_candidate)
+                                break
+                            await asyncio.sleep(0.5)
+                            continue
+                        logger.error("Groq HTTP error %s on %s: %s", err.response.status_code, model_candidate, err.response.text[:200])
+                        break
+                    except Exception as exc:
+                        logger.warning("Groq request error on %s: %s", model_candidate, exc)
+                        await asyncio.sleep(0.5)
+                        break
+
+        raise RuntimeError("All Groq models and attempts exhausted due to rate limits or connectivity.")
 
 
 def _load_gemini():

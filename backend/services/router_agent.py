@@ -1,82 +1,212 @@
 """
-IP-SAKTI Sahayak — Zero-Shot LLM Intent Router Agent
+IP-SAKTI Sahayak — Unified Smart Router Agent (v2)
 --------------------------------------------------------------
-Classifies any natural language query dynamically using LLM zero-shot reasoning.
-Eliminates rigid hardcoded keyword lexicons and regular expressions.
-Handles typos, Hinglish ("patnt kaise file kare"), meta questions ("wha is ip sakti"),
-and distinguishes them cleanly from botanical formulation audits.
+Single source of truth for query intent classification.
+Uses a deterministic (temperature=0) LLM call with entity extraction
+to auto-detect the correct response mode for ANY natural language input.
+
+Modes (invisible to user — system decides automatically):
+  CHAT   — Greetings, identity, meta ("hi", "who are you")
+  GUIDE  — Knowledge Q&A ("what is patent", "explain section 3d")
+  HYBRID — Ambiguous composition + question ("is 2% alcohol patentable?")
+  AUDIT  — Full formulation audit ("Ashwagandha 500mg capsule with Guduchi extract")
 """
 from __future__ import annotations
+import os
+import re
 import json
+import asyncio
 import logging
-from typing import Dict, Any
-from backend.services.llm_layer import get_llm_with_fallback, chat
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-CLASSIFIER_SYSTEM_PROMPT = """You are the Zero-Shot Intent Router Agent for the IP-SAKTI Sahayak AYUSH IPR & Biodiversity Governance Platform.
-Your sole job is to classify the user's natural language query into EXACTLY ONE of these 3 intent categories:
+# ---------------------------------------------------------------------------
+# Deterministic Router System Prompt
+# ---------------------------------------------------------------------------
 
-1. CONVERSATIONAL:
-   - Greetings, chitchat, identity questions, typos ("hi", "hello", "wha is ip sakti", "who are you", "my name is Rahul", "who created this").
-   - Meta queries asking what IP-SAKTI is, how it works, or platform overview.
+ROUTER_SYSTEM_PROMPT = """You are the Unified Smart Router for IP-SAKTI Sahayak, an AYUSH IPR & Biodiversity governance platform.
 
-2. STATUTORY_KNOWLEDGE:
-   - General informational Q&A about patent law definitions, Patents Act 1970, Section 3(p) TK bar, Section 3(d) efficacy rules, NBA pre-approval process, TKDL database guidance, filing fees.
-   - Questions asking "what is patent", "how to patent", "explain section 3d", "is patenting free in India", "patnt kaise file kare", "what is traditional knowledge".
+Your job: Analyze the user's query and classify it into exactly ONE of 4 modes. Return ONLY valid JSON.
 
-3. FORMULATION_AUDIT:
-   - Explicit botanical extract formulations, Ayurvedic polyherbal recipes, bioactive fractions, or specific product patent eligibility claims.
-   - Examples: "Ashwagandha + Guduchi extract capsule 500mg", "Curcumin 98% fraction anti-inflammatory", "Classical Chyawanprash modification with liposomal delivery", "Herbal tea with tulsi and ginger for stress".
+## MODES
 
-Output ONLY a JSON object with this exact structure:
-{"intent": "CONVERSATIONAL" | "STATUTORY_KNOWLEDGE" | "FORMULATION_AUDIT", "reason": "<brief reasoning>"}
-Do NOT output markdown syntax, code fences, or any other text.
+### CHAT
+- Greetings, identity questions, meta platform queries, and ALL general miscellaneous queries.
+- Includes: everyday questions, recipes/cooking, math, science, history, coding, philosophy, jokes, casual conversation, out-of-domain questions.
+- Examples: "hi", "hello", "who are you", "what is ip sakti", "recipe for pasta", "how do stars form", "what is 25 * 4", "tell me a joke", "write a python function"
+
+### GUIDE
+- Asking about patent law, statutory definitions, filing procedures, fees, legal sections, treaties (Patents Act 1970/2024, BD Act 2023, TKDL, WIPO, PCT, Trademark, Copyright, CDSCO, FSSAI).
+- The user wants INFORMATION, EXPLANATION, or LEGAL EDUCATION, not an audit of a specific formulation.
+- Examples: "what is a patent", "explain section 3(d)", "how to file a patent in India", "what is TKDL", "is patenting free in India", "how does PCT filing work"
+
+### HYBRID
+- The user mentions an abstract product idea or general composition AND asks about patentability or legal feasibility.
+- They are NOT submitting a full quantitative formulation for audit — they want strategic feasibility guidance.
+- Examples: "if I make a turmeric neem face cream can I patent it?", "is 2% alcohol patentable?", "can herbal tea be patented?"
+- Key signal: question about patentability / eligibility of an idea or partial formulation.
+
+### AUDIT
+- The user is submitting a concrete botanical formulation, product composition, or extract with named ingredients for a statutory audit.
+- Contains specific herbs/ingredients + dosage forms/ratios OR detailed product claims.
+- Examples: "Ashwagandha 500mg + Guduchi 250mg extract capsule for stress", "Curcumin 98% bioactive fraction formulation", "Herbal tea with 40% Tulsi, 30% Ginger, 30% Cinnamon"
+- Key signal: concrete named herbs/botanicals + dosage/form/percentage to run an audit.
+
+## DECISION RULES
+1. If the query is off-topic, casual, recipe, math, science, general trivia, or platform greeting → CHAT
+2. If the query asks for statutory definitions, legal procedures, fees, or IP law education → GUIDE
+3. If the query asks if a general concept/product can be patented → HYBRID
+4. If the query provides specific botanical ingredients and composition to evaluate → AUDIT
+
+## OUTPUT FORMAT
+Return ONLY this JSON (no markdown, no code fences, no extra text):
+{"mode": "CHAT|GUIDE|HYBRID|AUDIT", "confidence": 0.0-1.0, "reason": "brief explanation", "entities": {"ingredients": [], "legal_refs": [], "composition_params": []}}
 """
 
-async def classify_query_intent_llm(query: str) -> Dict[str, Any]:
-    """Classifies query using LLM zero-shot reasoning."""
+
+async def classify_intent(query: str, conversation_context: str = "") -> Dict[str, Any]:
+    """
+    Unified intent classification using deterministic LLM call.
+    Returns: {"mode": "CHAT|GUIDE|HYBRID|AUDIT", "confidence": float, "reason": str, "entities": dict}
+    """
     q_clean = query.strip()
     if not q_clean:
-        return {"intent": "CONVERSATIONAL", "reason": "Empty query"}
+        return {"mode": "CHAT", "confidence": 1.0, "reason": "Empty query", "entities": {}}
 
+    # --- Attempt LLM classification with temperature=0 ---
     try:
-        llm = get_llm_with_fallback()
+        llm = _get_router_llm()
         if llm:
-            user_msg = f'User Query to classify: "{q_clean}"'
-            response_text = await chat(llm, system=CLASSIFIER_SYSTEM_PROMPT, user=user_msg)
-            
-            # Clean thinking tags if present
-            import re
-            cleaned_resp = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
-            # Strip code block markers if present
-            cleaned_resp = re.sub(r'```json\s*', '', cleaned_resp)
-            cleaned_resp = re.sub(r'```\s*', '', cleaned_resp).strip()
+            user_msg = f'Classify this query:\n"{q_clean}"'
+            if conversation_context:
+                user_msg = f'Recent conversation context:\n{conversation_context}\n\nNew query to classify:\n"{q_clean}"'
 
-            parsed = json.loads(cleaned_resp)
-            intent = parsed.get("intent", "FORMULATION_AUDIT")
-            if intent in ["CONVERSATIONAL", "STATUTORY_KNOWLEDGE", "FORMULATION_AUDIT"]:
-                logger.info("Zero-Shot LLM Router classified query '%s' as [%s]", q_clean, intent)
-                return {"intent": intent, "reason": parsed.get("reason", "LLM classified")}
+            response_text = await _chat_deterministic(llm, ROUTER_SYSTEM_PROMPT, user_msg)
+
+            # Clean response
+            cleaned = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+            cleaned = re.sub(r'```json\s*', '', cleaned)
+            cleaned = re.sub(r'```\s*', '', cleaned).strip()
+
+            parsed = json.loads(cleaned)
+            mode = parsed.get("mode", "CHAT")
+            confidence = float(parsed.get("confidence", 0.9))
+
+            if mode in ["CHAT", "GUIDE", "HYBRID", "AUDIT"]:
+                logger.info("Smart Router: '%s' → [%s] (confidence=%.2f)", q_clean[:50], mode, confidence)
+                return {
+                    "mode": mode,
+                    "confidence": confidence,
+                    "reason": parsed.get("reason", "LLM classified"),
+                    "entities": parsed.get("entities", {})
+                }
+    except json.JSONDecodeError as e:
+        logger.warning("Router JSON parse failed: %s", e)
     except Exception as e:
-        logger.warning("Zero-Shot LLM Intent Router failed (%s) — falling back to heuristic evaluation", e)
+        logger.warning("Smart Router LLM call failed (%s) — using heuristic fallback", e)
 
-    # Fallback heuristic if LLM is unreachable
-    q_lower = q_clean.lower()
-    formulation_indicators = [
-        "extract", "capsule", "syrup", "tablet", "powder", "churna", "samhita",
-        "fraction", "tea", "aahar", "wellness", "gummy", "oil", "taila",
-        "ashwagandha", "guduchi", "curcumin", "turmeric", "tulsi", "brahmi", "neem",
-        "triphala", "shilajit", "amla", "bhasma", "kashaya", "kwath", "avaleha",
-        "formulation", "composition", "dose", "mg", "ratio", "delivery"
-    ]
-    has_formulation = any(term in q_lower for term in formulation_indicators)
-    meta_keywords = ["ip sakti", "ipsakti", "ip-sakti", "sakti", "who are you", "what is your name", "my name", "hello", "hi", "hey"]
-    is_meta = any(k in q_lower for k in meta_keywords)
+    # --- Heuristic fallback (only when LLM is unreachable) ---
+    return _heuristic_fallback(q_clean)
 
-    if is_meta or "name" in q_lower:
-        return {"intent": "CONVERSATIONAL", "reason": "Heuristic meta fallback"}
-    if not has_formulation or q_lower.startswith(("what", "wha", "wt", "how", "explain", "define")):
-        return {"intent": "STATUTORY_KNOWLEDGE", "reason": "Heuristic Q&A fallback"}
 
-    return {"intent": "FORMULATION_AUDIT", "reason": "Heuristic formulation fallback"}
+def _get_router_llm():
+    """Get an LLM client specifically for routing (uses same provider chain)."""
+    try:
+        from backend.services.llm_layer import get_llm_with_fallback
+    except ImportError:
+        from services.llm_layer import get_llm_with_fallback
+    return get_llm_with_fallback()
+
+
+async def _chat_deterministic(llm, system: str, user: str) -> str:
+    """Chat with temperature=0 for deterministic classification."""
+    try:
+        try:
+            from langchain_core.messages import SystemMessage, HumanMessage
+            messages = [SystemMessage(content=system), HumanMessage(content=user)]
+        except ImportError:
+            class SimpleMsg:
+                def __init__(self, role, content):
+                    self.role = role
+                    self.content = content
+                    self.type = role
+            messages = [SimpleMsg("system", system), SimpleMsg("user", user)]
+
+        # If it's our DirectGroqLLM, use it directly (already handles temp)
+        # For LangChain models, try to override temperature
+        if hasattr(llm, 'temperature'):
+            original_temp = llm.temperature
+            llm.temperature = 0.0
+            try:
+                response = await llm.ainvoke(messages)
+            finally:
+                llm.temperature = original_temp
+        else:
+            response = await llm.ainvoke(messages)
+
+        return response.content
+    except Exception as e:
+        logger.error("Deterministic chat failed: %s", e)
+        return ""
+
+
+def _heuristic_fallback(query: str) -> Dict[str, Any]:
+    """Last-resort pattern matching when LLM is completely unreachable."""
+    q = query.lower().strip()
+
+    # CHAT signals
+    chat_signals = ["hello", "hi ", "hey", "thanks", "thank you", "bye", "who are you",
+                    "what is your name", "my name", "ip sakti", "ipsakti", "ip-sakti", "sakti"]
+    if any(s in q for s in chat_signals) or len(q.split()) <= 2:
+        return {"mode": "CHAT", "confidence": 0.8, "reason": "Heuristic: greeting/meta", "entities": {}}
+
+    # AUDIT signals — requires specific named herbs + dosage/form
+    herb_names = ["ashwagandha", "guduchi", "curcumin", "tulsi", "brahmi", "neem",
+                  "triphala", "shilajit", "amla", "haridra", "shatavari", "giloy"]
+    dosage_forms = ["capsule", "tablet", "syrup", "powder", "churna", "extract",
+                    "fraction", "mg", "ml", "gummy", "oil", "taila"]
+    has_herb = any(h in q for h in herb_names)
+    has_form = any(f in q for f in dosage_forms)
+    if has_herb and has_form and not q.endswith("?"):
+        return {"mode": "AUDIT", "confidence": 0.7, "reason": "Heuristic: herb + dosage form", "entities": {}}
+
+    # Statutory / Legal signals
+    statutory_terms = ["patent", "act", "section", "law", "rule", "fee", "cost", "file", "filing",
+                       "tkdl", "nba", "abs", "biodiversity", "treaty", "pct", "wipo", "fssai",
+                       "ayush", "license", "trademark", "copyright", "prior art", "infringement",
+                       "examination", "grant", "novelty", "cdsco", "ipr"]
+    has_statutory = any(t in q for t in statutory_terms)
+
+    # GUIDE signals — questions about legal/statutory concepts
+    pure_question = q.startswith(("what is", "what are", "how to", "how do", "explain",
+                                   "define", "tell me about", "wha ", "wt "))
+    if pure_question and has_statutory and not has_herb:
+        return {"mode": "GUIDE", "confidence": 0.75, "reason": "Heuristic: knowledge question", "entities": {}}
+
+    # General knowledge, math, creative or miscellaneous questions without statutory terms -> CHAT
+    if not has_herb and not has_statutory:
+        return {"mode": "CHAT", "confidence": 0.85, "reason": "Heuristic: general/miscellaneous query", "entities": {}}
+
+    # HYBRID — everything else (composition + question, or ambiguous)
+    return {"mode": "HYBRID", "confidence": 0.6, "reason": "Heuristic: ambiguous, defaulting safe", "entities": {}}
+
+
+# Legacy compatibility wrapper
+async def classify_query_intent_llm(query: str) -> Dict[str, Any]:
+    """Legacy wrapper — maps new 4-mode system to old 3-category interface."""
+    result = await classify_intent(query)
+    mode = result["mode"]
+    mode_map = {
+        "CHAT": "CONVERSATIONAL",
+        "GUIDE": "STATUTORY_KNOWLEDGE",
+        "HYBRID": "STATUTORY_KNOWLEDGE",
+        "AUDIT": "FORMULATION_AUDIT"
+    }
+    return {
+        "intent": mode_map.get(mode, "FORMULATION_AUDIT"),
+        "reason": result.get("reason", ""),
+        "mode": mode,
+        "confidence": result.get("confidence", 0.5),
+        "entities": result.get("entities", {})
+    }
