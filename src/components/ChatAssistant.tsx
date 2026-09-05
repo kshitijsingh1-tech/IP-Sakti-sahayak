@@ -35,6 +35,8 @@ interface ChatAssistantProps {
   lawYear?: string;
   onNavigateTab: (tab: string) => void;
   onOpenHelp?: () => void;
+  initialQuery?: string | null;
+  onClearInitialQuery?: () => void;
 }
 
 export interface ChatMessage {
@@ -46,6 +48,33 @@ export interface ChatMessage {
   result?: QueryResult;
 }
 
+function createVerdictStatement(result: QueryResult, queryText: string): string {
+  const cat = result.classification?.category || '';
+  const isNonAudit = ['CONVERSATIONAL', 'STATUTORY_INFORMATION', 'HYBRID_GUIDANCE'].includes(cat);
+
+  if (isNonAudit) {
+    return result.classification?.description || 
+      'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. How can I assist you today?';
+  }
+
+  const score = result.readinessPassport?.overallScore || 70;
+  const blockers = result.readinessPassport?.criticalBlockers || [
+    'Section 3(d) synergistic bio-activity data required under Patents Act 1970',
+    'NBA Form III pre-approval required under Biological Diversity Act 2023'
+  ];
+  const isPatentReady = score >= 85 && blockers.length === 0;
+
+  let stmt = '';
+  if (isPatentReady) {
+    stmt = `STATUTORY VERDICT: PATENT GRANT READY (Score: ${score}%)\nMeets all statutory criteria under Patents Act 1970 (Sec 3p/3d), BD Act 2023, and AYUSH guidelines.`;
+  } else {
+    stmt = `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\nYou are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
+      blockers.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
+  }
+  stmt += `\n\nStatutory 4-agent audit & GraphRAG synthesis complete for: "${queryText}". Select any tool button below (Pins, Graph, Passport) to view full legal evidence.`;
+  return stmt;
+}
+
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   jurisdiction,
   onJurisdictionChange,
@@ -55,12 +84,14 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   activeResult,
   lawYear = '2024',
   onNavigateTab,
-  onOpenHelp
+  onOpenHelp,
+  initialQuery,
+  onClearInitialQuery
 }) => {
   const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS['en'];
   const [inputQuery, setInputQuery] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(initialQuery && initialQuery.trim()));
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchFilter, setSearchFilter] = useState('');
   const [activeModalTool, setActiveModalTool] = useState<'classifier' | 'tkdl' | 'abs' | 'whatif' | 'passport' | 'architecture' | 'graph' | 'citations' | null>(null);
@@ -85,18 +116,29 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
   // Continuous Chat Conversation Messages Stream (ChatGPT / Claude style)
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (initialQuery && initialQuery.trim()) {
+      return [
+        {
+          id: `user-init-${Date.now()}`,
+          sender: 'user',
+          text: initialQuery.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ];
+    }
     if (activeResult) {
+      const q = activeResult.userQuery || 'AYUSH Formulation Audit';
       return [
         {
           id: 'msg-user-init',
           sender: 'user',
-          text: activeResult.userQuery || 'Ashwagandha Formulation Audit',
+          text: q,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         },
         {
           id: 'msg-asst-init',
           sender: 'assistant',
-          text: `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${activeResult.readinessPassport?.overallScore || 69}%)\nMissing 2 Statutory Requirements for Patent Grant:\n  1. Section 3(d) synergistic bio-activity data required under Patents Act 1970.\n  2. Mandatory Form III pre-approval required under Biological Diversity Act 2023.\n\nStatutory 4-agent audit & GraphRAG synthesis complete for "${activeResult.userQuery || 'AYUSH Audit'}". Select any tool below to inspect details.`,
+          text: createVerdictStatement(activeResult, q),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           result: activeResult
         }
@@ -180,7 +222,9 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       .catch(err => console.log('Backend history fetch skipped:', err.message));
   }, []);
 
-  const handleQuerySubmit = async (queryText: string) => {
+  const lastProcessedInitialQuery = React.useRef<string | null>(null);
+
+  const handleQuerySubmit = async (queryText: string, isFreshSession = false) => {
     const hasContent = queryText.trim() || attachedFiles.length > 0;
     if (!hasContent) return;
 
@@ -199,7 +243,16 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       files: attachedFiles.length > 0 ? [...attachedFiles] : undefined
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    if (isFreshSession) {
+      setMessages([userMsg]);
+    } else {
+      setMessages(prev => {
+        if (prev.length === 1 && prev[0].sender === 'user' && prev[0].text === finalQuery) {
+          return prev;
+        }
+        return [...prev, userMsg];
+      });
+    }
     setInputQuery('');
     setAttachedFiles([]);
     setIsLoading(true);
@@ -208,31 +261,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       const result = await analyzeQuery(finalQuery, jurisdiction, lawYear);
       onAnalysisResult(result);
 
-      let verdictStatement = '';
-      const cat = result.classification?.category || '';
-      const isNonAudit = ['CONVERSATIONAL', 'STATUTORY_INFORMATION', 'HYBRID_GUIDANCE'].includes(cat);
-
-      if (isNonAudit) {
-        // Smart Router auto-detected CHAT / GUIDE / HYBRID — clean text, no audit scores
-        verdictStatement = result.classification?.description || 
-          'I am IP-SAKTI Sahayak, your AI Decision Engine for Ayurvedic IPR & Biodiversity compliance. How can I assist you today?';
-      } else {
-        // AUDIT mode — full 4-Agent Pipeline with statutory verdict
-        const score = result.readinessPassport?.overallScore || 70;
-        const blockers = result.readinessPassport?.criticalBlockers || [
-          'Section 3(d) synergistic bio-activity data required under Patents Act 1970',
-          'NBA Form III pre-approval required under Biological Diversity Act 2023'
-        ];
-        const isPatentReady = score >= 85 && blockers.length === 0;
-
-        if (isPatentReady) {
-          verdictStatement = `STATUTORY VERDICT: PATENT GRANT READY (Score: ${score}%)\nMeets all statutory criteria under Patents Act 1970 (Sec 3p/3d), BD Act 2023, and AYUSH guidelines.`;
-        } else {
-          verdictStatement = `STATUTORY VERDICT: CONDITIONAL READINESS (Score: ${score}%)\nYou are currently missing ${blockers.length} statutory requirements for patent grant:\n` +
-            blockers.map((b, i) => `  ${i + 1}. ${b}`).join('\n');
-        }
-        verdictStatement += `\n\nStatutory 4-agent audit & GraphRAG synthesis complete for: "${finalQuery}". Select any tool button below (Pins, Graph, Passport) to view full legal evidence.`;
-      }
+      const verdictStatement = createVerdictStatement(result, finalQuery);
 
       // Append Assistant Response Message to continuous stream
       const asstMsg: ChatMessage = {
@@ -243,7 +272,12 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
         result: result
       };
 
-      setMessages(prev => [...prev, asstMsg]);
+      setMessages(prev => {
+        if (isFreshSession) {
+          return [userMsg, asstMsg];
+        }
+        return [...prev, asstMsg];
+      });
 
       const querySnippet = finalQuery.length > 36 ? finalQuery.substring(0, 36) + '...' : finalQuery;
       const newItem: AuditHistoryItem = {
@@ -271,6 +305,18 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
       setIsLoading(false);
     }
   };
+
+  // Automatically execute query when coming from Landing Hero page
+  React.useEffect(() => {
+    if (initialQuery && initialQuery.trim()) {
+      const queryToRun = initialQuery.trim();
+      if (lastProcessedInitialQuery.current !== queryToRun) {
+        lastProcessedInitialQuery.current = queryToRun;
+        onClearInitialQuery?.();
+        handleQuerySubmit(queryToRun, true);
+      }
+    }
+  }, [initialQuery]);
 
   const handleNewAudit = () => {
     setSelectedHistoryId(null);

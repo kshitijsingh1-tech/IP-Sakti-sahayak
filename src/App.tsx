@@ -21,6 +21,7 @@ export function App() {
   const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
 
   const [activeResult, setActiveResult] = useState<QueryResult | null>(null);
+  const [initialAssistantQuery, setInitialAssistantQuery] = useState<string | null>(null);
 
   const handleJurisdictionChange = async (j: Jurisdiction) => {
     setJurisdiction(j);
@@ -46,10 +47,9 @@ export function App() {
     setActiveTab('assistant');
   };
 
-  const handleStartQuery = async (queryText: string) => {
+  const handleStartQuery = (queryText: string) => {
+    setInitialAssistantQuery(queryText);
     setActiveTab('assistant');
-    const res = await analyzeQuery(queryText, jurisdiction, lawYear);
-    setActiveResult(res);
   };
 
   return (
@@ -89,6 +89,8 @@ export function App() {
             lawYear={lawYear}
             onNavigateTab={setActiveTab}
             onOpenHelp={() => setIsHelpOpen(true)}
+            initialQuery={initialAssistantQuery}
+            onClearInitialQuery={() => setInitialAssistantQuery(null)}
           />
         )}
 
@@ -122,7 +124,7 @@ export function App() {
               )}
 
               {activeTab === 'passport' && (
-                <ReadinessPassport passport={displayResult.readinessPassport} />
+                <ReadinessPassport passport={displayResult.readinessPassport} result={displayResult} />
               )}
 
               {activeTab === 'architecture' && (

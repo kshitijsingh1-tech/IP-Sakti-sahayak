@@ -6,15 +6,16 @@ import type { QueryResult } from '../types';
  */
 export function exportToWord(result: QueryResult): void {
   const query = result.userQuery || 'AYUSH Formulation Audit';
-  const passport = result.readinessPassport || {
+  const rawPassport = result.readinessPassport;
+  const passport = (rawPassport && rawPassport.overallScore && rawPassport.overallScore > 0) ? rawPassport : {
     overallScore: 75,
     patentabilityScore: 80,
     tkClearanceScore: 70,
     absComplianceScore: 85,
-    regulatoryReadinessScore: 65,
+    regulatoryReadinessScore: 75,
     exportReadinessScore: 75,
-    criticalBlockers: ['Section 3(d) synergistic bio-activity proof required', 'NBA Form III clearance pending'],
-    recommendedRoadmap: ['Conduct HPLC assay for active markers', 'File Form III under BD Act 2023']
+    criticalBlockers: (rawPassport?.criticalBlockers && rawPassport.criticalBlockers.length > 0) ? rawPassport.criticalBlockers : ['Section 3(d) synergistic bio-activity proof required', 'NBA Form III clearance pending under BD Act 2023'],
+    recommendedRoadmap: (rawPassport?.recommendedRoadmap && rawPassport.recommendedRoadmap.length > 0) ? rawPassport.recommendedRoadmap : ['Conduct HPLC assay for active markers', 'File Form III under BD Act 2023', 'Draft process patent claims']
   };
   const classification = result.classification || {
     category: 'PROPRIETARY_MEDICINE',
@@ -208,15 +209,16 @@ export function exportToPdf(result: QueryResult): void {
   });
 
   const query = result.userQuery || 'AYUSH Formulation Audit';
-  const passport = result.readinessPassport || {
+  const rawPassport = result.readinessPassport;
+  const passport = (rawPassport && rawPassport.overallScore && rawPassport.overallScore > 0) ? rawPassport : {
     overallScore: 75,
     patentabilityScore: 80,
     tkClearanceScore: 70,
     absComplianceScore: 85,
-    regulatoryReadinessScore: 65,
+    regulatoryReadinessScore: 75,
     exportReadinessScore: 75,
-    criticalBlockers: ['Section 3(d) synergistic bio-activity proof required', 'NBA Form III clearance pending'],
-    recommendedRoadmap: ['Conduct HPLC assay for active markers', 'File Form III under BD Act 2023']
+    criticalBlockers: (rawPassport?.criticalBlockers && rawPassport.criticalBlockers.length > 0) ? rawPassport.criticalBlockers : ['Section 3(d) synergistic bio-activity proof required', 'NBA Form III clearance pending under BD Act 2023'],
+    recommendedRoadmap: (rawPassport?.recommendedRoadmap && rawPassport.recommendedRoadmap.length > 0) ? rawPassport.recommendedRoadmap : ['Conduct HPLC assay for active markers', 'File Form III under BD Act 2023', 'Draft process patent claims']
   };
 
   const dateStr = new Date().toLocaleDateString('en-IN', {
