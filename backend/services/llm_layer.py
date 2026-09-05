@@ -131,10 +131,11 @@ class DirectGroqLLM:
 
         models_to_try = [
             self.model,
+            "groq/compound-mini",
             "qwen/qwen3.6-27b",
-            "qwen/qwen3.8-27b",
-            "openai/gpt-oss-20b",
-            "openai/gpt-oss-120b"
+            "groq/compound",
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b"
         ]
         # Deduplicate while preserving order
         seen = set()

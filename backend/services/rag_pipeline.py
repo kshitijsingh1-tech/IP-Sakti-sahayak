@@ -249,11 +249,31 @@ async def run_4_agent_pipeline(
 
         if not clean_resp:
             if mode == "CHAT":
-                clean_resp = (
-                    f"I am **IP-SAKTI Sahayak**, your AI Assistant for Ayurvedic IPR & Biodiversity compliance.\n\n"
-                    f"Regarding your query **\"{query}\"**: High traffic was temporarily detected on the LLM reasoning cluster. "
-                    "I am available to assist you with traditional knowledge prior-art queries, Section 3(p) statutory bars, Section 3(d) efficacy evidence requirements, or Biological Diversity Act clearances."
-                )
+                q_lower = query.lower().strip()
+                is_greeting = any(w in q_lower for w in [
+                    "hello", "hi", "hey", "who are you", "what are you", "what is your name", 
+                    "what do you do", "introduce", "namaste", "what is ip sakti", "what is ip-sakti", "help"
+                ])
+                if is_greeting:
+                    clean_resp = (
+                        "Hello! I am **IP-SAKTI Sahayak**, your AI Assistant and Decision Engine for "
+                        "**Ayurvedic Intellectual Property Rights (IPR)**, **Traditional Knowledge Digital Library (TKDL) clearance**, "
+                        "and **Biological Diversity Act (BDA) compliance**.\n\n"
+                        "### How I can assist you:\n"
+                        "- 🌿 **Formulation Prior-Art Audit**: Analyze complex herbal formulations (e.g., *Ashwagandha*, *Guduchi*, *Curcumin*) against TKDL and classical treatises (Charaka, Sushruta, API).\n"
+                        "- ⚖️ **Section 3(p) & 3(d) Patentability Check**: Evaluate whether your formulation overcomes traditional knowledge aggregation bars and meets synergistic efficacy requirements.\n"
+                        "- 🏛️ **National Biodiversity Authority (NBA) Clearance**: Determine Form III approval requirements, Access and Benefit Sharing (ABS) duties, and commercial exemption status.\n"
+                        "- 📊 **What-If Reformulation Simulator**: Model changes to botanical ratios, extraction methods, or novel bio-enhancers to boost your Readiness Passport score.\n\n"
+                        "Feel free to enter your botanical formulation or ask any question regarding Indian or international patent law!"
+                    )
+                else:
+                    clean_resp = (
+                        f"Hello! I am **IP-SAKTI Sahayak**, your AI Assistant for Ayurvedic IPR & Biodiversity compliance.\n\n"
+                        f"I received your query: **\"{query}\"**.\n\n"
+                        "I specialize in analyzing herbal formulations, prior-art searches, Section 3(p)/3(d) patent hurdles, "
+                        "and NBA regulatory compliance. You can ask me legal questions (e.g., *'What is Section 3(p)?'*) or submit "
+                        "a formulation with botanical ingredients to trigger a full statutory audit."
+                    )
             elif mode == "GUIDE":
                 clean_resp = (
                     f"### Statutory Guidance: {query}\n\n"

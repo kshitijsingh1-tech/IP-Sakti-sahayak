@@ -83,7 +83,13 @@ export async function analyzeQuery(
   if (mode === 'CHAT') {
     nonAuditCategory = 'CONVERSATIONAL';
     title = 'Conversational Response';
-    desc = `I am IP-SAKTI Sahayak. To give you the best assistance on "${userQuery}", please ensure the local AI backend server is active at http://localhost:8000.`;
+    const qLower = userQuery.toLowerCase().trim();
+    const isGreeting = ['hello', 'hi', 'hey', 'who are you', 'what are you', 'what is your name', 'help', 'namaste'].some(w => qLower.includes(w));
+    if (isGreeting) {
+      desc = `Hello! I am **IP-SAKTI Sahayak**, your AI Assistant for Ayurvedic IPR & Biodiversity compliance.\n\nI can assist you with prior-art searches, Section 3(p) TKDL bars, Section 3(d) synergistic efficacy hurdles, and National Biodiversity Authority (NBA) clearances. How can I help you today?`;
+    } else {
+      desc = `I am IP-SAKTI Sahayak, your AI Assistant for Ayurvedic IPR & Biodiversity compliance.\n\nRegarding "${userQuery}": I specialize in herbal formulation patentability, prior art audits, and ABS compliance. Feel free to submit a formulation to run a full statutory audit.`;
+    }
   } else if (mode === 'GUIDE') {
     nonAuditCategory = 'STATUTORY_INFORMATION';
     title = 'Statutory Knowledge Guidance';
