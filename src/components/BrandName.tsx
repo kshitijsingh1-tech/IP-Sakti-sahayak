@@ -14,7 +14,7 @@ export const BrandName: React.FC<BrandNameProps> = ({ className = '', size = 'md
       {/* Top Line: IP-SAKTI with Custom Leaf in 'A' */}
       <div className="flex items-center tracking-tight font-display font-black leading-none">
         {/* 'IP-' in dark herbal green */}
-        <span className={`${isLg ? 'text-2xl sm:text-3xl' : isSm ? 'text-base' : 'text-lg sm:text-xl'} text-[#165B33]`}>
+        <span className={`${isLg ? 'text-2xl sm:text-3xl' : isSm ? 'text-base' : 'text-lg sm:text-xl'} text-[#165B33] mr-0.5 inline-block`}>
           IP-
         </span>
         {/* 'SAKTI' in dark slate/charcoal */}

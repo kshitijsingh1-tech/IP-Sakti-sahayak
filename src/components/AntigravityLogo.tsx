@@ -14,7 +14,7 @@ export const AntigravityLogo: React.FC<AntigravityLogoProps> = ({ className = ''
       <img
         src="/ip-sakti-logo.png"
         alt="IP-SAKTI Emblem Logo"
-        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+        className="w-[84%] h-[84%] object-contain group-hover:scale-105 transition-transform duration-200"
       />
     </div>
   );
