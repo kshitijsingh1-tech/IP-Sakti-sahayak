@@ -15,6 +15,7 @@ Usage:
 from __future__ import annotations
 import os
 import asyncio
+import importlib
 import logging
 from typing import Optional
 from pathlib import Path
@@ -215,8 +216,9 @@ class DirectGroqLLM:
 
 def _load_gemini():
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-    except ImportError:
+        genai_mod = importlib.import_module("langchain_google_genai")
+        ChatGoogleGenerativeAI = getattr(genai_mod, "ChatGoogleGenerativeAI")
+    except (ImportError, AttributeError):
         raise ImportError("Run: pip install langchain-google-genai")
 
     api_key = os.getenv("GEMINI_API_KEY")
@@ -232,8 +234,9 @@ def _load_gemini():
 
 def _load_ollama():
     try:
-        from langchain_community.chat_models import ChatOllama
-    except ImportError:
+        ollama_mod = importlib.import_module("langchain_community.chat_models")
+        ChatOllama = getattr(ollama_mod, "ChatOllama")
+    except (ImportError, AttributeError):
         raise ImportError("Run: pip install langchain-community")
 
     return ChatOllama(
@@ -253,13 +256,16 @@ async def chat(llm, system: str, user: str, context: str = "") -> str:
     Returns the text response. Works with both LangChain and Direct REST LLM objects.
     """
     try:
+        messages = []
         try:
-            from langchain_core.messages import SystemMessage, HumanMessage
+            core_msg_mod = importlib.import_module("langchain_core.messages")
+            SystemMessage = getattr(core_msg_mod, "SystemMessage")
+            HumanMessage = getattr(core_msg_mod, "HumanMessage")
             messages = [SystemMessage(content=system)]
             if context:
                 messages.append(HumanMessage(content=f"[Context]\n{context}"))
             messages.append(HumanMessage(content=user))
-        except ImportError:
+        except (ImportError, AttributeError):
             class SimpleMsg:
                 def __init__(self, role, content):
                     self.role = role

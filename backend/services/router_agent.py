@@ -16,6 +16,7 @@ import os
 import re
 import json
 import asyncio
+import importlib
 import logging
 from typing import Dict, Any, Optional
 
@@ -127,9 +128,11 @@ async def _chat_deterministic(llm, system: str, user: str) -> str:
     """Chat with temperature=0 for deterministic classification."""
     try:
         try:
-            from langchain_core.messages import SystemMessage, HumanMessage
+            core_msg_mod = importlib.import_module("langchain_core.messages")
+            SystemMessage = getattr(core_msg_mod, "SystemMessage")
+            HumanMessage = getattr(core_msg_mod, "HumanMessage")
             messages = [SystemMessage(content=system), HumanMessage(content=user)]
-        except ImportError:
+        except (ImportError, AttributeError):
             class SimpleMsg:
                 def __init__(self, role, content):
                     self.role = role
