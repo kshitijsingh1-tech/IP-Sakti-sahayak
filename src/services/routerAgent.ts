@@ -74,23 +74,13 @@ export async function classifyQuerySmart(query: string): Promise<SmartClassifica
 function clientHeuristicFallback(query: string): SmartClassification {
   const q = query.toLowerCase().trim();
 
-  // CHAT
-  const chatSignals = ['hello', 'hi ', 'hey', 'thanks', 'thank you', 'bye', 'who are you',
-    'what is your name', 'my name', 'ip sakti', 'ipsakti', 'ip-sakti', 'sakti'];
-  if (chatSignals.some(s => q.includes(s)) || q.split(' ').length <= 2) {
-    return { mode: 'CHAT', confidence: 0.8, reason: 'Heuristic: greeting/meta', entities: {} };
-  }
-
-  // AUDIT — specific herbs + dosage forms + not a question
+  // Herb names & dosage forms
   const herbs = ['ashwagandha', 'guduchi', 'curcumin', 'tulsi', 'brahmi', 'neem',
     'triphala', 'shilajit', 'amla', 'haridra', 'shatavari', 'giloy'];
   const forms = ['capsule', 'tablet', 'syrup', 'powder', 'churna', 'extract',
     'fraction', 'mg', 'ml', 'gummy', 'oil', 'taila'];
   const hasHerb = herbs.some(h => q.includes(h));
   const hasForm = forms.some(f => q.includes(f));
-  if (hasHerb && hasForm && !q.endsWith('?')) {
-    return { mode: 'AUDIT', confidence: 0.7, reason: 'Heuristic: herb + dosage', entities: {} };
-  }
 
   // Statutory / Legal signals
   const statutoryTerms = ['patent', 'act', 'section', 'law', 'rule', 'fee', 'cost', 'file', 'filing',
@@ -99,20 +89,38 @@ function clientHeuristicFallback(query: string): SmartClassification {
     'examination', 'grant', 'novelty', 'cdsco', 'ipr'];
   const hasStatutory = statutoryTerms.some(t => q.includes(t));
 
-  // GUIDE — pure knowledge questions regarding legal / statutory concepts
-  const pureQuestion = ['what is', 'what are', 'how to', 'how do', 'explain',
-    'define', 'tell me about', 'wha ', 'wt '].some(s => q.startsWith(s));
-  if (pureQuestion && hasStatutory && !hasHerb) {
-    return { mode: 'GUIDE', confidence: 0.75, reason: 'Heuristic: knowledge Q&A', entities: {} };
+  // 1. Formulation + Patentability / Feasibility Question -> HYBRID
+  if ((hasHerb || hasForm) && (hasStatutory || q.endsWith('?') || q.includes('can i') || q.includes('patent'))) {
+    return { mode: 'HYBRID', confidence: 0.85, reason: 'Heuristic: formulation + feasibility question', entities: {} };
   }
 
-  // General knowledge, math, creative or miscellaneous questions without statutory terms -> CHAT
+  // 2. Concrete Formulation Audit -> AUDIT
+  if (hasHerb && hasForm && !q.endsWith('?')) {
+    return { mode: 'AUDIT', confidence: 0.8, reason: 'Heuristic: herb + dosage form', entities: {} };
+  }
+
+  // 3. Statutory Knowledge Question -> GUIDE
+  const pureQuestion = ['what is', 'what are', 'how to', 'how do', 'explain',
+    'define', 'tell me about', 'wha ', 'wt '].some(s => q.startsWith(s));
+  if (hasStatutory && (pureQuestion || !hasHerb)) {
+    return { mode: 'GUIDE', confidence: 0.8, reason: 'Heuristic: knowledge Q&A', entities: {} };
+  }
+
+  // 4. Strict Word-Bounded Greeting / Meta Signals (only if short and no herbs/statutes)
+  const isShort = q.split(/\s+/).length <= 7;
+  const isMeta = /\b(who are you|what is your name|my name|who made you|what do you do)\b/.test(q);
+  const isGreetingWord = /\b(hello|hi|hey|thanks|thank you|bye|namaste)\b/.test(q);
+  if ((isMeta || isGreetingWord) && isShort && !hasHerb && !hasStatutory) {
+    return { mode: 'CHAT', confidence: 0.9, reason: 'Heuristic: greeting/meta', entities: {} };
+  }
+
+  // 5. General knowledge without statutory terms -> CHAT
   if (!hasHerb && !hasStatutory) {
     return { mode: 'CHAT', confidence: 0.85, reason: 'Heuristic: general/miscellaneous query', entities: {} };
   }
 
-  // HYBRID — everything ambiguous
-  return { mode: 'HYBRID', confidence: 0.6, reason: 'Heuristic: ambiguous', entities: {} };
+  // 6. Default Safe -> HYBRID
+  return { mode: 'HYBRID', confidence: 0.7, reason: 'Heuristic: ambiguous, defaulting safe', entities: {} };
 }
 
 // Legacy compatibility export
