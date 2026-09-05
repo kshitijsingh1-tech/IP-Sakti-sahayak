@@ -1,6 +1,6 @@
 import React from 'react';
 import type { IPReadinessPassport, QueryResult } from '../types';
-import { Globe, Award, CheckCircle2, AlertTriangle, Sparkles, Shield, Compass, FileText, ArrowRight, ExternalLink } from 'lucide-react';
+import { Globe, Award, CheckCircle2, AlertTriangle, Sparkles, Shield, Compass } from 'lucide-react';
 import { ExportRolloutButton } from './ExportRolloutButton';
 
 interface ReadinessPassportProps {

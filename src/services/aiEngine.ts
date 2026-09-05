@@ -124,16 +124,28 @@ export async function analyzeQuery(
       },
       ipMap: isHybrid ? [
         {
-          domain: 'Patents Act 1970',
-          status: 'CONDITIONAL',
-          risk_level: 'MEDIUM',
-          recommendations: 'File process claim with synergistic efficacy data to satisfy Section 3(p) & 3(d).'
+          type: 'PATENT' as const,
+          title: 'Patents Act 1970 Compliance',
+          status: 'CONDITIONAL' as const,
+          summary: 'File process claim with synergistic efficacy data to satisfy Section 3(p) & 3(d).',
+          keyRequirements: [
+            'Section 3(d) synergistic bio-activity data required',
+            'Novel extraction ratio and standardized fingerprinting',
+            'Traditional Knowledge prior-art clearance'
+          ],
+          citations: [MASTER_CITATIONS[0], MASTER_CITATIONS[1]]
         },
         {
-          domain: 'Biological Diversity Act 2023',
-          status: 'APPROVAL_REQUIRED',
-          risk_level: 'HIGH',
-          recommendations: 'Obtain mandatory Form III approval from NBA prior to patent grant.'
+          type: 'ABS_DUTY' as const,
+          title: 'Biological Diversity Act Compliance',
+          status: 'CONDITIONAL' as const,
+          summary: 'Obtain mandatory Form III approval from NBA prior to patent grant.',
+          keyRequirements: [
+            'File Form III application with NBA under Section 6 of BD Act 2023',
+            'Document botanical resource provenance and local collection permits',
+            'Comply with Nagoya Protocol Access & Benefit Sharing (ABS) guidelines'
+          ],
+          citations: [MASTER_CITATIONS[2]]
         }
       ] : [],
       absAnalysis: {
@@ -150,11 +162,13 @@ export async function analyzeQuery(
       },
       tkOverlap: isHybrid ? [
         {
-          term: 'Ayurvedic Botanical Resource',
-          source: 'TKDL / Classical Samhitas',
-          overlap_type: 'KNOWN_TRADITIONAL_USE',
-          risk: 'HIGH',
-          mitigation: 'Claim novel extraction ratio, synergistic combination, or enhanced bioavailability.'
+          classicalText: 'Caraka Samhita / Bhavaprakasa Nighantu',
+          ayurvedicName: 'Ayurvedic Botanical Resource',
+          botanicalName: 'Biological Resource Extract',
+          modernTerm: 'Phytochemical compound',
+          overlapScore: 78,
+          similarityDetails: 'Known traditional use documented in TKDL & classical Ayurvedic texts. Requires novel extraction ratio or synergistic combination.',
+          status: 'PRIOR_ART_BAR' as const
         }
       ] : [],
       readinessPassport: {
@@ -184,39 +198,9 @@ export async function analyzeQuery(
         { agent: 'STRATEGIST' as const, title: 'Multi-Regime IP Roadmap', status: 'completed' as const, details: 'Synthesized patentability scorecard & regulatory export pathway', timestamp: 'Just now', findings: ['Generated 5-pillar Readiness Passport and strategic milestones'] }
       ] : [],
       citations: isHybrid ? [
-        {
-          id: 'cit-sec3p',
-          statute_or_source: 'Indian Patents Act 1970',
-          provision: 'Section 3(p)',
-          year_or_version: '2024',
-          authority_level: 'STATUTORY_ACT',
-          excerpt: 'An invention which in effect is traditional knowledge or which is an aggregation or duplication of known properties of traditionally known component or components is not an invention.',
-          confidence_score: 98,
-          jurisdiction: 'INDIA',
-          url: 'https://ipindia.gov.in'
-        },
-        {
-          id: 'cit-sec3d',
-          statute_or_source: 'Indian Patents Act 1970',
-          provision: 'Section 3(d)',
-          year_or_version: '2024',
-          authority_level: 'STATUTORY_ACT',
-          excerpt: 'The mere discovery of a new form of a known substance which does not result in the enhancement of the known efficacy of that substance is not patentable.',
-          confidence_score: 95,
-          jurisdiction: 'INDIA',
-          url: 'https://ipindia.gov.in'
-        },
-        {
-          id: 'cit-nba-sec6',
-          statute_or_source: 'Biological Diversity Act 2002 (Amended 2023)',
-          provision: 'Section 6(1)',
-          year_or_version: '2023',
-          authority_level: 'STATUTORY_ACT',
-          excerpt: 'No person shall apply for any intellectual property right, by whatever name called, in or outside India for any invention based on any research or information on a biological resource obtained from India, without obtaining the previous approval of the National Biodiversity Authority.',
-          confidence_score: 97,
-          jurisdiction: 'INDIA',
-          url: 'https://nbaindia.org'
-        }
+        MASTER_CITATIONS[0],
+        MASTER_CITATIONS[1],
+        MASTER_CITATIONS[2]
       ] : [],
       nodes: isHybrid ? [
         { id: 'n-query', label: userQuery.length > 25 ? userQuery.substring(0, 25) + '...' : userQuery, type: 'QUERY' as const, subText: 'Formulation Query' },
