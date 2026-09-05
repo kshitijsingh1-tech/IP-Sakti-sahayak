@@ -44,9 +44,9 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
   const defaultCorpora: EnrichedCorpusTarget[] = [
     {
       id: 'cs-rasayana',
-      treatiseName: 'Caraka Saṃhitā',
-      sanskritName: 'चरक संहिता (Cikitsāsthāna 1.1)',
-      canonicalSection: 'Cikitsāsthāna Rasāyana Adhyāya 1:12-15',
+      treatiseName: 'Caraka Samhita',
+      sanskritName: 'चरक संहिता (Cikitsasthana 1.1)',
+      canonicalSection: 'Cikitsasthana Rasayana Adhyaya 1:12-15',
       overlapScore: topMatch?.overlapScore || 78,
       status: 'PRIOR_ART_BAR',
       shlokaReference: isTurmeric
@@ -59,9 +59,9 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
     },
     {
       id: 'ss-dravya',
-      treatiseName: 'Suśruta Saṃhitā',
-      sanskritName: 'सुश्रुत संहिता (Sūtrasthāna 38)',
-      canonicalSection: 'Sūtrasthāna Dravyasangrahaṇīya Adhyāya',
+      treatiseName: 'Susruta Samhita',
+      sanskritName: 'सुश्रुत संहिता (Sutrasthana 38)',
+      canonicalSection: 'Sutrasthana Dravyasangrahaniya Adhyaya',
       overlapScore: 54,
       status: 'NOVEL_EXTRACT_POTENTIAL',
       shlokaReference: isGuduchi
@@ -74,9 +74,9 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
     },
     {
       id: 'bp-nighantu',
-      treatiseName: 'Bhāvaprakāśa Nighaṇṭu',
-      sanskritName: 'भावप्रकाश निघण्टु (Guḍūcyādi Varga)',
-      canonicalSection: 'Guḍūcyādi Varga Shloka 189-191',
+      treatiseName: 'Bhavaprakasa Nighantu',
+      sanskritName: 'भावप्रकाश निघण्टु (Guducyadi Varga)',
+      canonicalSection: 'Guducyadi Varga Shloka 189-191',
       overlapScore: matches.length > 1 ? matches[1].overlapScore : 65,
       status: 'PRIOR_ART_BAR',
       shlokaReference: 'अश्वगन्धाऽनिलश्लेष्मश्वित्रशोथक्षयापहा । बल्या रसायनी तिक्ता कषायोष्णाऽतिशुक्रला ॥',
@@ -87,9 +87,9 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
     },
     {
       id: 'ah-rasayana',
-      treatiseName: 'Aṣṭāṅga Hṛdaya',
-      sanskritName: 'अष्टाङ्ग हृदय (Uttarasthāna 39)',
-      canonicalSection: 'Uttarasthāna Rasāyanavidhi Adhyāya',
+      treatiseName: 'Astanga Hrdaya',
+      sanskritName: 'अष्टाङ्ग हृदय (Uttarasthana 39)',
+      canonicalSection: 'Uttarasthana Rasayanavidhi Adhyaya',
       overlapScore: 42,
       status: 'NOVEL_EXTRACT_POTENTIAL',
       shlokaReference: 'सर्वरोगप्रशमनं वृष्यमायुष्यमुत्तमम् । मेधास्मृतिकरं धन्यं वयसः स्थापनं परम् ॥',
@@ -136,78 +136,76 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
   };
 
   return (
-    <div className="bg-slate-950 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl text-slate-100 space-y-6 w-full relative overflow-hidden">
-      {/* Ambient Tactical Glows */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/10 blur-3xl pointer-events-none rounded-full" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-500/10 blur-3xl pointer-events-none rounded-full" />
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xl text-slate-950 space-y-6 w-full relative overflow-hidden">
+      {/* Subtle Ambient Glow */}
+      <div className="absolute -top-24 -right-24 w-80 h-80 bg-slate-100 blur-3xl pointer-events-none rounded-full" />
 
       {/* Header with Live Telemetry Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5 relative z-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 relative z-10">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold shadow-xs">
-              <Radar className="w-5 h-5 text-emerald-400" />
+            <div className="w-8 h-8 rounded-xl bg-slate-950 text-white flex items-center justify-center font-bold shadow-xs">
+              <Radar className="w-4 h-4 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black font-display tracking-tight text-white">
+                <h2 className="text-base font-black font-display text-slate-950 tracking-tight">
                   TKDL Prior-Art Overlap Radar
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/80 text-[10px] font-mono font-bold">
-                  ACTIVE HUD
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300 text-[10px] font-mono font-bold">
+                  Section 3(p) Radar
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Real-time polar scanning against 5 classical Sanskrit Samhitas, Nighantus & WIPO IPC Class A61K.
+              <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                Screening against 5 classical Sanskrit Samhitas, Nighantus & WIPO IPC Class A61K.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Tactical Badges */}
+        {/* Minimal Black & Slate Badges */}
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>IPC: <strong>A61K 36/00</strong></span>
+          <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-mono text-xs">
+            IPC: <strong>A61K 36/00</strong>
           </span>
-          <span className="px-3 py-1 rounded-full bg-red-950/80 border border-red-800/80 text-red-300 font-mono text-xs font-bold">
-            Sec 3(p) Defense Engine
+          <span className="px-3 py-1 rounded-full bg-slate-950 text-white text-xs font-bold shadow-xs">
+            Section 3(p) Defense Engine
           </span>
         </div>
       </div>
 
       {/* Multilingual Terminology Normalization Matrix */}
-      <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 relative z-10 space-y-2.5">
+      <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200 relative z-10 space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2 font-mono">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>TKDL Multilingual Botanical Normalization Matrix</span>
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 font-mono">
+            <Sparkles className="w-3.5 h-3.5 text-slate-700" />
+            <span>Botanical Terminology Normalization Matrix</span>
           </h3>
-          <span className="text-[10px] font-mono text-slate-400">4-Way Semantic Mapping</span>
+          <span className="text-[10px] font-mono text-slate-500">4-Way Statutory Mapping</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
-          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-            <span className="text-[10px] text-slate-400 font-mono uppercase block">Active Query Concept</span>
-            <strong className="text-white text-sm font-bold block mt-0.5 truncate" title={displayConcept}>
+          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-[10px] text-slate-500 font-mono uppercase block">User Query Concept</span>
+            <strong className="text-slate-950 text-xs font-bold block mt-0.5 truncate" title={displayConcept}>
               {displayConcept}
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-            <span className="text-[10px] text-emerald-400/90 font-mono uppercase block">Sanskrit Canonical Entity</span>
-            <strong className="text-white text-sm font-bold block mt-0.5 truncate" title={displaySanskrit}>
+          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-[10px] text-slate-500 font-mono uppercase block">Sanskrit Canonical Entity</span>
+            <strong className="text-slate-950 text-xs font-bold block mt-0.5 truncate" title={displaySanskrit}>
               {displaySanskrit}
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-            <span className="text-[10px] text-blue-400/90 font-mono uppercase block">Botanical Taxon</span>
-            <strong className="text-white font-mono text-xs font-bold block mt-0.5 truncate" title={displayBotanical}>
+          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-[10px] text-slate-500 font-mono uppercase block">Botanical Taxon</span>
+            <strong className="text-slate-950 font-mono text-xs font-bold block mt-0.5 truncate" title={displayBotanical}>
               {displayBotanical}
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-            <span className="text-[10px] text-amber-400/90 font-mono uppercase block">Phyto-Marker Target</span>
-            <strong className="text-white text-xs font-bold block mt-0.5 truncate" title={displayBioactive}>
+          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-[10px] text-slate-500 font-mono uppercase block">Phyto-Marker Profile</span>
+            <strong className="text-slate-950 text-xs font-bold block mt-0.5 truncate" title={displayBioactive}>
               {displayBioactive}
             </strong>
           </div>
@@ -217,58 +215,56 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
       {/* Main Tactical Radar Screen & Telemetry Console */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 relative z-10 items-start">
         {/* Left: Tactical Polar SVG Radar Screen (5 Cols) */}
-        <div className="lg:col-span-5 p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col items-center justify-center space-y-4 relative overflow-hidden">
-          <div className="w-full flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-              <Crosshair className="w-3.5 h-3.5" />
-              <span>POLAR SCANNER</span>
+        <div className="lg:col-span-5 p-5 rounded-3xl bg-slate-50/90 border border-slate-200 flex flex-col items-center justify-center space-y-4 relative overflow-hidden shadow-xs">
+          <div className="w-full flex items-center justify-between text-xs font-mono text-slate-600 border-b border-slate-200 pb-2">
+            <span className="flex items-center gap-1.5 text-slate-950 font-bold">
+              <Crosshair className="w-3.5 h-3.5 text-slate-900" />
+              <span>POLAR RADAR SCANNER</span>
             </span>
-            <span>RANGE: 100% TK MATCH</span>
+            <span>RANGE: 100% OVERLAP</span>
           </div>
 
           {/* SVG Polar Radar Display */}
-          <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] flex items-center justify-center select-none">
+          <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] flex items-center justify-center select-none bg-white rounded-full border border-slate-200 shadow-xs">
             <svg viewBox="0 0 320 320" className="w-full h-full">
               {/* Radar Grid Circles */}
-              <circle cx="160" cy="160" r="135" fill="rgba(15, 23, 42, 0.6)" stroke="#334155" strokeWidth="1.5" strokeDasharray="3 3" />
-              <circle cx="160" cy="160" r="105" fill="none" stroke="#dc2626" strokeWidth="1" strokeDasharray="2 2" opacity="0.6" />
-              <circle cx="160" cy="160" r="70" fill="none" stroke="#334155" strokeWidth="1" strokeDasharray="2 2" />
-              <circle cx="160" cy="160" r="35" fill="none" stroke="#334155" strokeWidth="1" strokeDasharray="2 2" />
+              <circle cx="160" cy="160" r="135" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.2" strokeDasharray="3 3" />
+              <circle cx="160" cy="160" r="105" fill="none" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" />
+              <circle cx="160" cy="160" r="70" fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+              <circle cx="160" cy="160" r="35" fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
 
               {/* Crosshair Axes */}
-              <line x1="25" y1="160" x2="295" y2="160" stroke="#1e293b" strokeWidth="1" />
-              <line x1="160" y1="25" x2="160" y2="295" stroke="#1e293b" strokeWidth="1" />
-              <line x1="64" y1="64" x2="256" y2="256" stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 4" />
-              <line x1="64" y1="256" x2="256" y2="64" stroke="#1e293b" strokeWidth="0.8" strokeDasharray="2 4" />
+              <line x1="25" y1="160" x2="295" y2="160" stroke="#e2e8f0" strokeWidth="1" />
+              <line x1="160" y1="25" x2="160" y2="295" stroke="#e2e8f0" strokeWidth="1" />
+              <line x1="64" y1="64" x2="256" y2="256" stroke="#f1f5f9" strokeWidth="0.8" strokeDasharray="2 4" />
+              <line x1="64" y1="256" x2="256" y2="64" stroke="#f1f5f9" strokeWidth="0.8" strokeDasharray="2 4" />
 
               {/* Range Distance Labels */}
-              <text x="165" y="38" fill="#ef4444" fontSize="8" fontFamily="monospace" fontWeight="bold">75% SEC 3(p) BAR</text>
+              <text x="165" y="38" fill="#0f172a" fontSize="8" fontFamily="monospace" fontWeight="bold">75% SEC 3(p) BAR</text>
               <text x="165" y="93" fill="#64748b" fontSize="8" fontFamily="monospace">50% MODERATE</text>
-              <text x="165" y="128" fill="#10b981" fontSize="8" fontFamily="monospace">25% SAFE</text>
+              <text x="165" y="128" fill="#94a3b8" fontSize="8" fontFamily="monospace">25% SAFE</text>
 
-              {/* Rotating Sweep Beam with Cone Gradient */}
+              {/* Rotating Sweep Beam with Monochrome Gradient */}
               <g className="animate-radar-sweep">
                 <defs>
-                  <linearGradient id="radarSweepGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" />
-                    <stop offset="70%" stopColor="rgba(16, 185, 129, 0.05)" />
+                  <linearGradient id="radarSweepGradLight" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(15, 23, 42, 0.18)" />
+                    <stop offset="70%" stopColor="rgba(15, 23, 42, 0.04)" />
                     <stop offset="100%" stopColor="transparent" />
                   </linearGradient>
                 </defs>
-                <path d="M 160 160 L 160 25 A 135 135 0 0 1 255 65 Z" fill="url(#radarSweepGrad)" />
-                <line x1="160" y1="160" x2="160" y2="25" stroke="#34d399" strokeWidth="1.5" />
+                <path d="M 160 160 L 160 25 A 135 135 0 0 1 255 65 Z" fill="url(#radarSweepGradLight)" />
+                <line x1="160" y1="160" x2="160" y2="25" stroke="#0f172a" strokeWidth="1.5" />
               </g>
 
               {/* Radar Center Beacon */}
-              <circle cx="160" cy="160" r="4" fill="#10b981" />
-              <circle cx="160" cy="160" r="8" fill="none" stroke="#10b981" strokeWidth="1" opacity="0.6" />
+              <circle cx="160" cy="160" r="4" fill="#0f172a" />
+              <circle cx="160" cy="160" r="8" fill="none" stroke="#0f172a" strokeWidth="1" opacity="0.4" />
 
               {/* Target Blips Plotted on the Radar */}
               {defaultCorpora.map((corpus, idx) => {
                 const { x, y } = getCoordinates(corpus.overlapScore, corpus.angleDeg);
                 const isSelected = selectedTargetIndex === idx;
-                const isBarred = corpus.status === 'PRIOR_ART_BAR';
-                const blipColor = isBarred ? '#ef4444' : (corpus.overlapScore > 50 ? '#f59e0b' : '#10b981');
 
                 return (
                   <g 
@@ -282,10 +278,10 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
                       cy={y} 
                       r="12" 
                       fill="none" 
-                      stroke={blipColor} 
-                      strokeWidth="1.5" 
+                      stroke="#0f172a" 
+                      strokeWidth="1.2" 
                       className="animate-radar-ping" 
-                      opacity="0.8" 
+                      opacity="0.3" 
                     />
 
                     {/* Selected Target Reticle Lock */}
@@ -295,7 +291,7 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
                         cy={y} 
                         r="16" 
                         fill="none" 
-                        stroke="#ffffff" 
+                        stroke="#0f172a" 
                         strokeWidth="1.5" 
                         strokeDasharray="3 2"
                         className="animate-spin"
@@ -308,20 +304,20 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
                       cx={x} 
                       cy={y} 
                       r={isSelected ? '6' : '4.5'} 
-                      fill={blipColor} 
+                      fill={isSelected ? '#0f172a' : (corpus.status === 'PRIOR_ART_BAR' ? '#0f172a' : '#475569')} 
                       stroke="#ffffff" 
-                      strokeWidth={isSelected ? '2' : '1'} 
+                      strokeWidth={isSelected ? '2' : '1.5'} 
                     />
 
                     {/* Target Label */}
                     <text 
                       x={x + 8} 
                       y={y - 5} 
-                      fill={isSelected ? '#ffffff' : '#cbd5e1'} 
+                      fill="#0f172a" 
                       fontSize="9" 
                       fontFamily="monospace" 
                       fontWeight={isSelected ? 'bold' : 'normal'}
-                      className="drop-shadow-md pointer-events-none"
+                      className="pointer-events-none"
                     >
                       {corpus.treatiseName} ({corpus.overlapScore}%)
                     </text>
@@ -332,18 +328,18 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
           </div>
 
           {/* Radar Legend Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-[10px] font-mono text-slate-400">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-              <span>&gt;70% Sec 3(p) Bar</span>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1 text-[10px] font-mono text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-950" />
+              <span>Section 3(p) Bar (&gt;70%)</span>
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span>40-70% Overlap</span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+              <span>Moderate Overlap (40-70%)</span>
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span>&lt;40% Novel Extract</span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+              <span>Novel Extract (&lt;40%)</span>
             </span>
           </div>
         </div>
@@ -351,76 +347,72 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
         {/* Right: Live Target Telemetry & Overlap Analysis (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
           {/* Active Target Card */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="p-5 sm:p-6 rounded-3xl bg-slate-50/90 border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
-                    LOCKED TARGET TELEMETRY
+                  <span className="w-2 h-2 rounded-full bg-slate-950" />
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-700 font-bold">
+                    Target Telemetry
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-black font-display text-white mt-1">
+                <h3 className="text-base sm:text-lg font-black font-display text-slate-950 mt-1">
                   {activeTarget.treatiseName} — {activeTarget.sanskritName}
                 </h3>
-                <span className="text-xs text-slate-400 font-mono block mt-0.5">
+                <span className="text-xs text-slate-600 font-mono block mt-0.5">
                   Canonical Citation: <strong>{activeTarget.canonicalSection}</strong>
                 </span>
               </div>
 
-              {/* Overlap Gauge */}
+              {/* Overlap Score */}
               <div className="text-right">
-                <div className={`text-2xl font-black font-mono ${
-                  activeTarget.overlapScore >= 70 ? 'text-red-400' : activeTarget.overlapScore >= 50 ? 'text-amber-400' : 'text-emerald-400'
-                }`}>
+                <div className="text-2xl font-black font-mono text-slate-950">
                   {activeTarget.overlapScore}%
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono">TKDL Overlap Score</span>
+                <span className="text-[10px] text-slate-500 font-mono">TKDL Overlap Score</span>
               </div>
             </div>
 
             {/* Overlap Progress Bar */}
             <div className="space-y-1">
-              <div className="flex justify-between text-[11px] font-mono text-slate-400">
+              <div className="flex justify-between text-[11px] font-mono text-slate-600">
                 <span>Prior-Art Similarity Index</span>
-                <span className={activeTarget.status === 'PRIOR_ART_BAR' ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
-                  {activeTarget.status === 'PRIOR_ART_BAR' ? 'Section 3(p) Bar Triggered' : '✓ Novelty Clearance Potential'}
+                <span className="font-bold text-slate-950">
+                  {activeTarget.status === 'PRIOR_ART_BAR' ? 'Section 3(p) Bar Triggered' : 'Novelty Clearance Potential'}
                 </span>
               </div>
-              <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-300">
                 <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    activeTarget.overlapScore >= 70 ? 'bg-gradient-to-r from-amber-500 to-red-500' : 'bg-gradient-to-r from-blue-500 to-emerald-500'
-                  }`}
+                  className="h-full rounded-full bg-slate-950 transition-all duration-500"
                   style={{ width: `${activeTarget.overlapScore}%` }}
                 />
               </div>
             </div>
 
-            {/* Classical Shloka / Canon Reference Excerpt */}
-            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span>Classical Treatise Verse / Shloka Reference</span>
+            {/* Classical Shloka Verse Excerpt */}
+            <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                <span>Classical Treatise Shloka Reference</span>
                 <button
                   onClick={() => handleCopyCitation(activeTarget.shlokaReference, activeTarget.id)}
-                  className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1"
                 >
-                  {copiedId === activeTarget.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  {copiedId === activeTarget.id ? <Check className="w-3 h-3 text-slate-950" /> : <Copy className="w-3 h-3 text-slate-700" />}
                   <span>{copiedId === activeTarget.id ? 'Copied' : 'Copy Verse'}</span>
                 </button>
               </div>
-              <p className="text-xs font-display text-emerald-300/95 italic leading-relaxed pl-3 border-l-2 border-emerald-500">
+              <p className="text-xs font-display text-slate-800 italic leading-relaxed pl-3 border-l-2 border-slate-950">
                 "{activeTarget.shlokaReference}"
               </p>
             </div>
 
             {/* Statutory Workaround & Defense Strategy Card */}
-            <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
-                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-950">
+                <ShieldAlert className="w-4 h-4 text-slate-950 shrink-0" />
                 <span>Section 3(p) Defense & Patent Workaround Strategy</span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-medium">
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
                 {activeTarget.statutoryWorkaround}
               </p>
             </div>
@@ -429,21 +421,21 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
       </div>
 
       {/* Scanned Treatises Selector Grid */}
-      <div className="space-y-3 relative z-10 pt-2 border-t border-slate-800">
+      <div className="space-y-3 relative z-10 pt-2 border-t border-slate-100">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+            <SlidersHorizontal className="w-4 h-4 text-slate-900" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-mono">
               Scanned Classical Corpora Targets ({filteredCorpora.length})
             </h4>
           </div>
 
-          {/* Filter Chips */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-900 rounded-xl border border-slate-800 text-xs">
+          {/* Filter Chips - Black & White Buttons */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs">
             <button
               onClick={() => setFilterType('ALL')}
               className={`px-3 py-1 rounded-lg font-bold transition-all text-xs cursor-pointer ${
-                filterType === 'ALL' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                filterType === 'ALL' ? 'bg-slate-950 text-white shadow-xs' : 'text-slate-700 hover:text-slate-950'
               }`}
             >
               All Treatises
@@ -451,7 +443,7 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
             <button
               onClick={() => setFilterType('BARRED')}
               className={`px-3 py-1 rounded-lg font-bold transition-all text-xs cursor-pointer ${
-                filterType === 'BARRED' ? 'bg-red-950 text-red-300 border border-red-800' : 'text-slate-400 hover:text-white'
+                filterType === 'BARRED' ? 'bg-slate-950 text-white shadow-xs' : 'text-slate-700 hover:text-slate-950'
               }`}
             >
               Section 3(p) Barred
@@ -459,7 +451,7 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
             <button
               onClick={() => setFilterType('CLEARANCE')}
               className={`px-3 py-1 rounded-lg font-bold transition-all text-xs cursor-pointer ${
-                filterType === 'CLEARANCE' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'text-slate-400 hover:text-white'
+                filterType === 'CLEARANCE' ? 'bg-slate-950 text-white shadow-xs' : 'text-slate-700 hover:text-slate-950'
               }`}
             >
               Clearance Gaps
@@ -471,7 +463,6 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {defaultCorpora.map((corpus, cIdx) => {
             const isSelected = selectedTargetIndex === cIdx;
-            const isBarred = corpus.status === 'PRIOR_ART_BAR';
 
             return (
               <button
@@ -479,20 +470,26 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
                 onClick={() => setSelectedTargetIndex(cIdx)}
                 className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative group ${
                   isSelected
-                    ? 'bg-slate-900 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/30'
-                    : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+                    ? 'bg-slate-950 text-white border-slate-950 shadow-md ring-2 ring-slate-900/20'
+                    : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200 hover:border-slate-400 shadow-xs'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-mono text-slate-400 truncate">Target #{cIdx + 1}</span>
+                  <span className={`text-[10px] font-mono truncate ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                    Target #{cIdx + 1}
+                  </span>
                   <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                    isBarred ? 'bg-red-950 text-red-300' : 'bg-emerald-950 text-emerald-300'
+                    isSelected ? 'bg-white text-slate-950' : 'bg-slate-200 text-slate-900'
                   }`}>
                     {corpus.overlapScore}%
                   </span>
                 </div>
-                <div className="text-xs font-bold text-white truncate">{corpus.treatiseName}</div>
-                <div className="text-[10px] text-slate-400 truncate mt-0.5">{corpus.canonicalSection}</div>
+                <div className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-slate-950'}`}>
+                  {corpus.treatiseName}
+                </div>
+                <div className={`text-[10px] truncate mt-0.5 ${isSelected ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {corpus.canonicalSection}
+                </div>
               </button>
             );
           })}
@@ -500,14 +497,14 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) =
       </div>
 
       {/* Strategic TKDL Defensive Shield Insight */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-start gap-3.5 relative z-10">
-        <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+      <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200 flex items-start gap-3.5 relative z-10 shadow-xs">
+        <ShieldCheck className="w-5 h-5 text-slate-950 shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+          <h4 className="text-xs font-bold text-slate-950 uppercase tracking-wider font-mono">
             How Indian Innovators Use TKDL as a Defensive Asset
           </h4>
-          <p className="text-xs text-slate-300 leading-relaxed font-medium">
-            Under Patents Act Section 3(p), traditional Ayurvedic formulations cannot be patented as raw admixtures in India. However, foreign patent applications filed abroad (e.g. USPTO, EPO) that attempt to monopolize Indian classical botanicals can be revoked using TKDL prior-art evidence files. To protect your innovation domestically, file a <strong className="text-white font-bold">Process Patent on proprietary extraction yields</strong> with comparative in-vitro / in-vivo synergy data under Section 3(d).
+          <p className="text-xs text-slate-700 leading-relaxed font-medium">
+            Under Patents Act Section 3(p), traditional Ayurvedic formulations cannot be patented as raw admixtures in India. However, foreign patent applications filed abroad (e.g. USPTO, EPO) that attempt to monopolize Indian classical botanicals can be revoked using TKDL prior-art evidence files. To protect your innovation domestically, file a <strong className="text-slate-950 font-bold">Process Patent on proprietary extraction yields</strong> with comparative in-vitro / in-vivo synergy data under Section 3(d).
           </p>
         </div>
       </div>
