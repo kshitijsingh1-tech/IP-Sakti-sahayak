@@ -226,12 +226,24 @@ async def run_4_agent_pipeline(
             user_prompt = f"User query: '{query}'\nRespond helpfully, accurately, and directly."
         elif mode == "GUIDE":
             sys_prompt = (
-                "You are an authoritative Senior Patent & AYUSH Regulatory Specialist for IP-SAKTI Sahayak. "
-                "Provide a comprehensive, accurate, structured legal analysis addressing the user's statutory or procedural inquiry. "
-                "Cite specific sections (e.g., Patents Act 1970/2024, BD Act 2023, TKDL, WIPO GRATK Treaty 2024, PCT guidelines) as applicable, "
-                "explaining definitions, statutory tests, and practical filing steps clearly and thoroughly."
+                "You are IP-SAKTI Sahayak, an expert AI advisor for Indian & international patent and AYUSH regulations. "
+                "CRITICAL INSTRUCTION: Keep the answer SIMPLE, DIRECT, AND PRACTICAL. Do NOT push an overwhelming wall of dense bureaucratic data, margin specs, or obscure legal jargon onto the user. "
+                "Structure your answer with clear, actionable sections that an entrepreneur, Ayurvedic practitioner, or researcher can grasp in 30 seconds:\n\n"
+                "**1. Quick Summary (1-2 clear, plain-language sentences)**\n\n"
+                "**2. Simple Step-by-Step Roadmap (4-5 clear, numbered steps with bold headers)**:\n"
+                "- Step 1: Prior-Art & TKDL Check (Search TKDL and Indian Patent Office InPASS to confirm novelty and avoid Section 3(p) bars)\n"
+                "- Step 2: Biodiversity Pre-Approval (Mandatory Form III under Section 6 of Biological Diversity Act 2023 for Indian herbs)\n"
+                "- Step 3: Drafting & Filing Application (Forms 1 & 2 on the IP India e-filing portal; emphasize synergistic efficacy under Section 3(d))\n"
+                "- Step 4: Examination & 20-Year Grant (Form 18/18A for examination; address Examiner objections to secure grant)\n"
+                "- Step 5: International Protection (Optional PCT filing within 12 months for target foreign markets)\n\n"
+                "**3. Key Filing Essentials (A clean, compact summary table)**:\n"
+                "| STEP / PHASE | KEY FORM | WHAT TO DO |\n"
+                "| :--- | :--- | :--- |\n"
+                "Ensure every table row is on a single physical line.\n\n"
+                "**4. Pro-Tip**: One actionable recommendation (e.g., file a Provisional Application early to lock priority).\n\n"
+                "Keep the tone encouraging, crisp, professional, and accessible."
             )
-            user_prompt = f"Statutory / Legal Question: '{query}'\nJurisdiction: {jurisdiction}\nEffective Year: {law_year}\nProvide a structured, authoritative explanation citing applicable legal provisions."
+            user_prompt = f"Question: '{query}'\nJurisdiction: {jurisdiction}\nEffective Law: {law_year}\nProvide a simple, clear, concise, step-by-step answer."
         else: # HYBRID
             sys_prompt = (
                 "You are a Senior IP Strategy Consultant for IP-SAKTI Sahayak. "
@@ -289,14 +301,21 @@ async def run_4_agent_pipeline(
                     )
             elif mode == "GUIDE":
                 clean_resp = (
-                    f"### Statutory Guidance: {query}\n\n"
-                    "Under the **Indian Patents Act 1970 (amended up to 2024)** and the **Biological Diversity Act 2023**:\n\n"
-                    "- **Definition of Patent (Section 2(1)(m))**: An exclusive monopoly granted by the State for an invention (a novel product or process involving an inventive step and capable of industrial application).\n"
-                    "- **Term of Protection (Section 53)**: Exactly 20 years from the filing date (or PCT international filing date), subject to annual statutory renewal fees.\n"
-                    "- **Core Patentability Criteria**: Novelty (Sec. 2(1)(j)), Inventive Step / Non-obviousness (Sec. 2(1)(ja)), and Industrial Applicability (Sec. 2(1)(ac)).\n"
-                    "- **Traditional Knowledge Bar (Section 3(p))**: Any invention which in effect is traditional knowledge or an aggregation or duplication of known properties of traditionally known components is statutorily non-patentable.\n"
-                    "- **Efficacy Requirement (Section 3(d))**: Mere discovery of a new form of a known substance without significant enhancement of known therapeutic efficacy is non-patentable.\n"
-                    "- **Mandatory NBA Approval**: Utilization of Indian biological resources requires Form III pre-approval under Section 6 of the BD Act 2002/2023 prior to grant."
+                    f"### How to File a Patent in India (Step-by-Step Guide)\n\n"
+                    "**Quick Summary**: In India, patenting an Ayurvedic or botanical invention involves 5 straightforward steps, focusing on proving novel synergistic efficacy and obtaining mandatory biodiversity clearances.\n\n"
+                    "**Step-by-Step Roadmap**:\n"
+                    "1. **Prior-Art & TKDL Search**: Search the Indian Patent Office (InPASS) and TKDL to confirm your composition or process is novel and overcomes Section 3(p) traditional knowledge exclusions.\n"
+                    "2. **Biodiversity Clearance (NBA Form III)**: Under Section 6 of the Biological Diversity Act 2023, apply for Form III approval from the National Biodiversity Authority before patent grant.\n"
+                    "3. **Draft & File Application**: Submit Form 1 (Application for Grant) and Form 2 (Provisional or Complete Specification) on the IP India e-filing portal (ipindiaservices.gov.in). Emphasize synergistic efficacy data under Section 3(d).\n"
+                    "4. **Request for Examination**: File Form 18 (or Form 18A for expedited examination for startups/women inventors) within 48 months from the filing date.\n"
+                    "5. **Examiner Response & Grant**: Respond to First Examination Report (FER) objections within 6 months. Upon satisfaction, a 20-year patent is issued.\n\n"
+                    "| STEP / PHASE | STATUTORY FORM | WHAT TO DO |\n"
+                    "| :--- | :--- | :--- |\n"
+                    "| **1. Application** | Form 1 & Form 2 | File provisional/complete specification on IP India portal |\n"
+                    "| **2. Biological Resources** | NBA Form III | Mandatory clearance for Indian herbs before patent grant |\n"
+                    "| **3. Examination** | Form 18 / 18A | Request examination within 48 months of priority date |\n"
+                    "| **4. Grant & Term** | Patent Grant | 20-year protection from filing date, subject to renewal |\n\n"
+                    "💡 **Pro-Tip**: File a **Provisional Application (Form 2)** immediately to secure your priority filing date while finalizing lab stability and synergistic clinical data."
                 )
             else:
                 clean_resp = (
