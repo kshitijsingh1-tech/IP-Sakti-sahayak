@@ -879,11 +879,12 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                       // Statutory guide / definitions (like "what is a patent") do NOT need audit tool buttons
                       const showPins = isFormulationOrAudit && hasCitations;
                       const showGraph = isFormulationOrAudit && hasGraph;
+                      const showTkdl = isFormulationOrAudit;
                       const showIpStrategy = isFormulationOrAudit && hasIpMap;
                       const showWhatIf = isFormulationOrAudit;
                       const showPassport = isFormulationOrAudit && hasValidScore;
 
-                      if (!showPins && !showGraph && !showIpStrategy && !showWhatIf && !showPassport) {
+                      if (!showPins && !showGraph && !showTkdl && !showIpStrategy && !showWhatIf && !showPassport) {
                         return null;
                       }
 
@@ -908,6 +909,17 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                             >
                               <Share2 className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
                               <span>Graph</span>
+                            </button>
+                          )}
+
+                          {showTkdl && (
+                            <button
+                              onClick={() => handleOpenToolForMessage('tkdl', msg.result!)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-950 hover:text-white text-slate-950 text-xs font-bold transition-all border border-slate-300 cursor-pointer shadow-xs group"
+                              title="Open TKDL Prior-Art Overlap Radar"
+                            >
+                              <BookOpen className="w-3.5 h-3.5 text-slate-700 group-hover:text-white transition-colors" />
+                              <span>TKDL Radar</span>
                             </button>
                           )}
 
