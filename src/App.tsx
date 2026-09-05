@@ -108,7 +108,7 @@ export function App() {
               )}
 
               {activeTab === 'tkdl' && (
-                <TKDLRadar matches={displayResult.tkOverlap} />
+                <TKDLRadar matches={displayResult.tkOverlap} queryConcept={displayResult.userQuery} />
               )}
 
               {activeTab === 'abs' && (

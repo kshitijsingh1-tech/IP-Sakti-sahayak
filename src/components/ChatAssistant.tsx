@@ -1262,7 +1262,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
                     />
                   )}
                   {activeModalTool === 'tkdl' && (
-                    <TKDLRadar matches={displayResult.tkOverlap} />
+                    <TKDLRadar matches={displayResult.tkOverlap} queryConcept={displayResult.userQuery} />
                   )}
                   {activeModalTool === 'abs' && (
                     <ABSChecker analysis={displayResult.absAnalysis} />

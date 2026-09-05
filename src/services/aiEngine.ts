@@ -211,17 +211,17 @@ export async function analyzeQuery(
         { id: 'n-query', label: userQuery.length > 25 ? userQuery.substring(0, 25) + '...' : userQuery, type: 'QUERY' as const, subText: 'Formulation Query' },
         { id: 'n-entity', label: 'Botanical Entity', type: 'ENTITY' as const, subText: 'Herbal Extracts' },
         { id: 'n-tkdl', label: 'TKDL Database', type: 'TK_RECORD' as const, subText: 'Prior Art' },
-        { id: 'n-patents', label: 'Patents Act Sec 3(p)/3(d)', type: 'STATUTE' as const, subText: 'Statutory Bar' },
-        { id: 'n-nba', label: 'BD Act Sec 6', type: 'STATUTE' as const, subText: 'NBA Form III' },
+        { id: 'n-statute-1', label: 'Patents Act Sec 3(p)/3(d)', type: 'STATUTE' as const, subText: 'Statutory Bar' },
+        { id: 'n-statute-2', label: 'BD Act Sec 6', type: 'STATUTE' as const, subText: 'NBA Form III' },
         { id: 'n-verdict', label: 'Readiness Passport', type: 'VERDICT' as const, subText: 'Score: 72/100' }
       ] : [],
       edges: isHybrid ? [
         { source: 'n-query', target: 'n-entity', label: 'Extracts bio-resource' },
         { source: 'n-entity', target: 'n-tkdl', label: 'Searches classical texts' },
-        { source: 'n-tkdl', target: 'n-patents', label: 'Evaluates Sec 3(p) bar' },
-        { source: 'n-entity', target: 'n-nba', label: 'Checks biological origin' },
-        { source: 'n-patents', target: 'n-verdict', label: 'Synthesizes IP posture' },
-        { source: 'n-nba', target: 'n-verdict', label: 'Synthesizes ABS posture' }
+        { source: 'n-tkdl', target: 'n-statute-1', label: 'Evaluates Sec 3(p) bar' },
+        { source: 'n-entity', target: 'n-statute-2', label: 'Checks biological origin' },
+        { source: 'n-statute-1', target: 'n-verdict', label: 'Synthesizes IP posture' },
+        { source: 'n-statute-2', target: 'n-verdict', label: 'Synthesizes ABS posture' }
       ] : [],
       legalDisclaimer: 'DISCLAIMER: IP-SAKTI Sahayak provides source-cited legal & regulatory guidance grounded in official Indian and international statutory frameworks.'
     };

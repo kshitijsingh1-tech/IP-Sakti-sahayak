@@ -301,20 +301,20 @@ export function getMockAnalysisForQuery(userQueryText: string, jurisdiction: 'IN
     ],
     citations: MASTER_CITATIONS,
     nodes: [
-      { id: 'n-user', label: 'User Formulation', type: 'QUERY', subText: 'Ashwagandha + Guduchi' },
-      { id: 'n-ashwa', label: 'Withania somnifera', type: 'ENTITY', subText: 'Botanical Resource' },
+      { id: 'n-query', label: 'User Formulation', type: 'QUERY', subText: 'Ashwagandha + Guduchi' },
+      { id: 'n-entity', label: 'Withania somnifera', type: 'ENTITY', subText: 'Botanical Resource' },
       { id: 'n-tkdl', label: 'Caraka Samhita TK', type: 'TK_RECORD', subText: 'Prior Art Documented' },
-      { id: 'n-sec3p', label: 'Patents Act Sec 3(p)', type: 'STATUTE', subText: 'TK Exclusion Bar' },
-      { id: 'n-nba', label: 'BD Act 2023 Sec 6', type: 'STATUTE', subText: 'NBA Approval Mandatory' },
+      { id: 'n-statute-1', label: 'Patents Act Sec 3(p)', type: 'STATUTE', subText: 'TK Exclusion Bar' },
+      { id: 'n-statute-2', label: 'BD Act 2023 Sec 6', type: 'STATUTE', subText: 'NBA Approval Mandatory' },
       { id: 'n-verdict', label: 'Process Patent + ABS Path', type: 'VERDICT', subText: 'Recommended IP Strategy' }
     ],
     edges: [
-      { source: 'n-user', target: 'n-ashwa', label: 'Contains ingredient' },
-      { source: 'n-ashwa', target: 'n-tkdl', label: 'Matches classical text' },
-      { source: 'n-tkdl', target: 'n-sec3p', label: 'Triggers patent bar' },
-      { source: 'n-ashwa', target: 'n-nba', label: 'Requires NBA clearance' },
-      { source: 'n-sec3p', target: 'n-verdict', label: 'Guides IP pivot' },
-      { source: 'n-nba', target: 'n-verdict', label: 'Mandates compliance' }
+      { source: 'n-query', target: 'n-entity', label: 'Contains ingredient' },
+      { source: 'n-entity', target: 'n-tkdl', label: 'Matches classical text' },
+      { source: 'n-tkdl', target: 'n-statute-1', label: 'Triggers patent bar' },
+      { source: 'n-entity', target: 'n-statute-2', label: 'Requires NBA clearance' },
+      { source: 'n-statute-1', target: 'n-verdict', label: 'Guides IP pivot' },
+      { source: 'n-statute-2', target: 'n-verdict', label: 'Mandates compliance' }
     ],
     legalDisclaimer: 'DISCLAIMER: IP-SAKTI Sahayak provides source-cited legal & regulatory information grounded in official statutes and traditional knowledge corpora. This information does not constitute formal legal advice. Consult a registered Patent Agent or AYUSH IP Facilitator for official filings.'
   };

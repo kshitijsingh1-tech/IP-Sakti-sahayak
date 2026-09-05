@@ -70,21 +70,28 @@ const GRADE_10_EXPLAINERS: Record<string, Grade10Explainer> = {
   }
 };
 
+// Aliases for alternate or custom node IDs
+GRADE_10_EXPLAINERS['n-user'] = GRADE_10_EXPLAINERS['n-query'];
+GRADE_10_EXPLAINERS['n-ashwa'] = GRADE_10_EXPLAINERS['n-entity'];
+GRADE_10_EXPLAINERS['n-patents'] = GRADE_10_EXPLAINERS['n-statute-1'];
+GRADE_10_EXPLAINERS['n-sec3p'] = GRADE_10_EXPLAINERS['n-statute-1'];
+GRADE_10_EXPLAINERS['n-nba'] = GRADE_10_EXPLAINERS['n-statute-2'];
+
 export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(nodes[0]?.id || 'n-query');
 
-  // Ordered list of nodes for step-by-step walkthrough
-  const stepOrder = ['n-query', 'n-entity', 'n-tkdl', 'n-statute-1', 'n-statute-2', 'n-verdict'];
-  const currentStepIndex = stepOrder.indexOf(selectedNodeId || 'n-query');
+  // Ordered list of nodes for step-by-step walkthrough derived dynamically
+  const stepOrder = nodes && nodes.length > 0 ? nodes.map(n => n.id) : ['n-query', 'n-entity', 'n-tkdl', 'n-statute-1', 'n-statute-2', 'n-verdict'];
+  const currentStepIndex = Math.max(0, stepOrder.indexOf(selectedNodeId || stepOrder[0]));
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || nodes[0];
-  const explainer = GRADE_10_EXPLAINERS[selectedNode?.id || 'n-query'] || {
-    icon: '🔍',
-    simpleTitle: selectedNode?.label || 'Information Node',
-    oneLiner: selectedNode?.subText || 'Verified evidence step in the statutory pipeline.',
-    analogy: 'A vital clue in the legal evidence puzzle.',
-    whatComputerDid: 'Audited this element against national and international IP standards.',
-    whyItMatters: 'Ensures the final decision is grounded in verified facts.'
+  const explainer = (selectedNode && GRADE_10_EXPLAINERS[selectedNode.id]) || {
+    icon: selectedNode?.type === 'STATUTE' ? '⚖️' : selectedNode?.type === 'ENTITY' ? '🌿' : selectedNode?.type === 'TK_RECORD' ? '📜' : '🔍',
+    simpleTitle: selectedNode?.label || 'Statutory Verification Step',
+    oneLiner: selectedNode?.subText || 'Verified statutory evidence step in the legal pipeline.',
+    analogy: 'A decisive link in establishing patent eligibility and regulatory authorization.',
+    whatComputerDid: `Audited ${selectedNode?.label || 'this element'} against statutory provisions (Patents Act 1970, BD Act 2023, AYUSH standards).`,
+    whyItMatters: 'Ensures absolute compliance, prevents IPO office actions, and guarantees legal readiness.'
   };
 
   const handlePrevStep = () => {
@@ -153,10 +160,15 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
 
   const nodeCoords: Record<string, { x: number; y: number }> = {
     'n-query': { x: 65, y: 125 },
+    'n-user': { x: 65, y: 125 },
     'n-entity': { x: 180, y: 65 },
+    'n-ashwa': { x: 180, y: 65 },
     'n-tkdl': { x: 180, y: 185 },
     'n-statute-1': { x: 355, y: 65 },
+    'n-patents': { x: 355, y: 65 },
+    'n-sec3p': { x: 355, y: 65 },
     'n-statute-2': { x: 355, y: 185 },
+    'n-nba': { x: 355, y: 185 },
     'n-verdict': { x: 535, y: 125 },
   };
 
@@ -221,27 +233,29 @@ export const EvidenceGraph: React.FC<EvidenceGraphProps> = ({ nodes, edges }) =>
 
         {/* Clickable Horizontal Step Badges */}
         <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-1">
-          {[
-            { id: 'n-query', label: '1. Your Idea', icon: '💡' },
-            { id: 'n-entity', label: '2. The Herb', icon: '🌿' },
-            { id: 'n-tkdl', label: '3. Ancient Books', icon: '📜' },
-            { id: 'n-statute-1', label: '4A. Patent Rule', icon: '⚖️' },
-            { id: 'n-statute-2', label: '4B. Govt Permit', icon: '🏛️' },
-            { id: 'n-verdict', label: '5. The Verdict', icon: '🎯' },
-          ].map((step) => {
-            const isCurrent = selectedNodeId === step.id;
+          {nodes.map((node, idx) => {
+            const isCurrent = selectedNodeId === node.id;
+            const icon = node.type === 'QUERY' ? '💡' 
+              : node.type === 'ENTITY' ? '🌿'
+              : node.type === 'TK_RECORD' ? '📜'
+              : node.type === 'VERDICT' ? '🎯'
+              : (idx === 3 || node.id.includes('statute-1') || node.id.includes('patent') ? '⚖️' : '🏛️');
+            
+            const shortLabel = `${idx + 1}. ${node.label.length > 14 ? node.label.substring(0, 12) + '...' : node.label}`;
+
             return (
               <button
-                key={step.id}
-                onClick={() => setSelectedNodeId(step.id)}
+                key={node.id}
+                onClick={() => setSelectedNodeId(node.id)}
+                title={node.label}
                 className={`p-2 rounded-xl text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border ${
                   isCurrent
                     ? 'bg-slate-950 text-white border-slate-950 shadow-xs scale-102'
                     : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
                 }`}
               >
-                <span className="text-sm shrink-0">{step.icon}</span>
-                <span className="truncate text-[11px]">{step.label}</span>
+                <span className="text-sm shrink-0">{icon}</span>
+                <span className="truncate text-[11px]">{shortLabel}</span>
               </button>
             );
           })}

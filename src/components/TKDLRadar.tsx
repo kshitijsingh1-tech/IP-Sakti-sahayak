@@ -1,12 +1,20 @@
 import React from 'react';
 import type { TKOverlapMatch } from '../types';
-import { BookOpen, ShieldAlert, Sparkles } from 'lucide-react';
+import { BookOpen, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface TKDLRadarProps {
   matches: TKOverlapMatch[];
+  queryConcept?: string;
 }
 
-export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches }) => {
+export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches, queryConcept }) => {
+  const topMatch = matches && matches.length > 0 ? matches[0] : null;
+
+  const displayConcept = queryConcept || (topMatch ? topMatch.ayurvedicName.replace(/\(.*?\)/g, '').trim() : 'Ayurvedic Botanical Complex');
+  const displaySanskrit = topMatch ? topMatch.ayurvedicName : 'पारंपरिक ज्ञान (Classical Ayurvedic Entity)';
+  const displayBotanical = topMatch ? topMatch.botanicalName : 'Polyherbal Botanical Taxon';
+  const displayBioactive = topMatch ? topMatch.modernTerm : 'Standardized Phyto-marker Profile';
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-lg text-slate-950 space-y-6 w-full relative overflow-hidden">
       {/* Google 4-Color Ambient Rainbow Halo Glow */}
@@ -42,37 +50,48 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches }) => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs relative z-10">
           <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
             <span className="text-[10px] text-slate-500 block font-mono">User Query Concept</span>
-            <strong className="text-slate-950 text-sm font-bold block mt-0.5">Ashwagandha Extract</strong>
+            <strong className="text-slate-950 text-sm font-bold block mt-0.5 truncate" title={displayConcept}>{displayConcept}</strong>
           </div>
           <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
             <span className="text-[10px] text-slate-500 block font-mono">Ayurvedic Sanskrit Entity</span>
-            <strong className="text-slate-950 text-sm font-bold block mt-0.5">अश्वगंधा (Balya / Rasayana)</strong>
+            <strong className="text-slate-950 text-sm font-bold block mt-0.5 truncate" title={displaySanskrit}>{displaySanskrit}</strong>
           </div>
           <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
             <span className="text-[10px] text-slate-500 block font-mono">Botanical Taxon</span>
-            <strong className="text-slate-950 font-mono text-xs font-bold block mt-0.5">Withania somnifera (Dunal)</strong>
+            <strong className="text-slate-950 font-mono text-xs font-bold block mt-0.5 truncate" title={displayBotanical}>{displayBotanical}</strong>
           </div>
           <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs">
             <span className="text-[10px] text-slate-500 block font-mono">Modern Bioactive Marker</span>
-            <strong className="text-slate-950 text-xs font-bold block mt-0.5">Withanolide A & D, Glycowithanolides</strong>
+            <strong className="text-slate-950 text-xs font-bold block mt-0.5 truncate" title={displayBioactive}>{displayBioactive}</strong>
           </div>
         </div>
       </div>
 
       {/* Overlap Matches */}
       <div className="space-y-4">
-        {matches.map((match, idx) => (
-          <div
-            key={idx}
-            className="p-5 rounded-xl bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all relative overflow-hidden group"
-          >
-            {/* Google Rainbow Hover Halo */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        {(!matches || matches.length === 0) ? (
+          <div className="p-6 rounded-xl bg-white border border-slate-200 text-center space-y-2">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <h4 className="text-xs font-bold text-slate-950">No Direct Classical Prior-Art Overlap Detected</h4>
+            <p className="text-[11px] text-slate-600 max-w-md mx-auto">
+              No direct 1:1 match in First Schedule classical texts. Process and synergistic formulation patent claims remain eligible under Section 3(d).
+            </p>
+          </div>
+        ) : (
+          matches.map((match, idx) => (
+            <div
+              key={idx}
+              className="p-5 rounded-xl bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all relative overflow-hidden group"
+            >
+              {/* Google Rainbow Hover Halo */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#4285f4]/15 via-[#ea4335]/10 via-[#fbbc05]/10 to-[#34a853]/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-            <div className="flex items-start justify-between mb-3 relative z-10">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-slate-950">{match.classicalText}</h4>
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-slate-950">{match.classicalText}</h4>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-950 border border-slate-300">
                     {match.status === 'PRIOR_ART_BAR' ? 'Section 3(p) Bar Triggered' : '✓ Novelty Clearance Potential'}
                   </span>
@@ -101,8 +120,9 @@ export const TKDLRadar: React.FC<TKDLRadarProps> = ({ matches }) => {
               <strong className="text-slate-950 font-bold">Detailed Findings: </strong>
               {match.similarityDetails}
             </p>
-          </div>
-        ))}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Defensive TK Shield Note */}
