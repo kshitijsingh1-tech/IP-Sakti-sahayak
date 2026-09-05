@@ -54,10 +54,10 @@ Your job: Analyze the user's query and classify it into exactly ONE of 4 modes. 
 - Key signal: concrete named herbs/botanicals + dosage/form/percentage to run an audit.
 
 ## DECISION RULES
-1. If the query is off-topic, casual, recipe, math, science, general trivia, or platform greeting → CHAT
-2. If the query asks for statutory definitions, legal procedures, fees, or IP law education → GUIDE
-3. If the query asks if a general concept/product can be patented → HYBRID
-4. If the query provides specific botanical ingredients and composition to evaluate → AUDIT
+1. If the query is off-topic, casual, recipe, math, science, general trivia, or platform greeting WITHOUT any patent or herbal formulation questions → CHAT
+2. If the query asks for pure statutory definitions, legal procedures, fees, or IP law education → GUIDE
+3. If the query asks whether an Ayurvedic/herbal product or concept can be patented, exported, or commercialized (e.g., "Can I patent X in India and sell it in Germany?"), or asks about patentability feasibility → ALWAYS classify as HYBRID (NEVER CHAT).
+4. If the query provides concrete botanical ingredients with dosages/forms to run a full statutory clearance audit → AUDIT
 
 ## OUTPUT FORMAT
 Return ONLY this JSON (no markdown, no code fences, no extra text):
@@ -84,12 +84,16 @@ async def classify_intent(query: str, conversation_context: str = "") -> Dict[st
 
             response_text = await _chat_deterministic(llm, ROUTER_SYSTEM_PROMPT, user_msg)
 
-            # Clean response
-            cleaned = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+            # Clean response: strip closed <think>...</think> and unclosed <think>...
+            cleaned = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
+            cleaned = re.sub(r'<think>.*$', '', cleaned, flags=re.DOTALL).strip()
             cleaned = re.sub(r'```json\s*', '', cleaned)
             cleaned = re.sub(r'```\s*', '', cleaned).strip()
 
-            parsed = json.loads(cleaned)
+            # Robust JSON extraction
+            json_match = re.search(r'\{.*\}', cleaned, flags=re.DOTALL)
+            json_str = json_match.group(0) if json_match else cleaned
+            parsed = json.loads(json_str)
             mode = parsed.get("mode", "CHAT")
             confidence = float(parsed.get("confidence", 0.9))
 

@@ -99,7 +99,7 @@ def _load_groq():
     if not api_key:
         raise ValueError("GROQ_API_KEY not set in .env")
 
-    model = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     # Always use DirectGroqLLM for resilient multi-model fallback and automatic 429 retry handling
     return DirectGroqLLM(api_key=api_key, model=model)
 
@@ -108,7 +108,7 @@ def get_direct_groq_llm():
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return None
-    model = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     return DirectGroqLLM(api_key=api_key, model=model)
 
 
@@ -120,6 +120,7 @@ class DirectGroqLLM:
 
     async def ainvoke(self, messages):
         import httpx
+        import re
         url = "https://api.groq.com/openai/v1/chat/completions"
         payload_messages = []
         for msg in messages:
@@ -129,11 +130,10 @@ class DirectGroqLLM:
 
         models_to_try = [
             self.model,
-            "groq/compound-mini",
-            "qwen/qwen3.6-27b",
-            "groq/compound",
             "openai/gpt-oss-120b",
-            "openai/gpt-oss-20b"
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.6-27b",
+            "qwen/qwen3.8-27b"
         ]
         # Deduplicate while preserving order
         seen = set()
@@ -153,7 +153,7 @@ class DirectGroqLLM:
                             json={
                                 "model": model_candidate,
                                 "messages": payload_messages,
-                                "max_tokens": 1500,
+                                "max_tokens": 2500,
                                 "temperature": 0.1
                             }
                         )
@@ -180,10 +180,21 @@ class DirectGroqLLM:
                         data = resp.json()
                         content = data["choices"][0]["message"]["content"]
 
+                        # Sanitize reasoning tokens: strip completed <think>...</think> and unclosed <think>...
+                        cleaned = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+                        cleaned = re.sub(r'<think>.*$', '', cleaned, flags=re.DOTALL).strip()
+
+                        # If the output only contained internal thinking and no real answer, skip to next model
+                        if len(cleaned) < 15 and len(content) > 50:
+                            logger.warning("Model %s produced only internal reasoning without final answer. Switching model.", model_candidate)
+                            break
+
+                        final_text = cleaned if cleaned else content
+
                         class LLMResponse:
                             def __init__(self, text):
                                 self.content = text
-                        return LLMResponse(content)
+                        return LLMResponse(final_text)
                     except httpx.HTTPStatusError as err:
                         if err.response.status_code == 429:
                             err_text = err.response.text.lower()

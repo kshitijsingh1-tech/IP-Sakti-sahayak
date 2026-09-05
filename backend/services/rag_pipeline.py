@@ -23,9 +23,12 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 def clean_llm_text(text: str) -> str:
-    """Strips internal thinking blocks <think>...</think> and cleans markdown text."""
+    """Strips internal thinking blocks <think>...</think>, unclosed thinking blocks, and cleans markdown text."""
     import re
+    if not text:
+        return ""
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    cleaned = re.sub(r'<think>.*$', '', cleaned, flags=re.DOTALL)
     return cleaned.strip()
 
 # ---------------------------------------------------------------------------
@@ -233,7 +236,7 @@ async def run_4_agent_pipeline(
             sys_prompt = (
                 "You are a Senior IP Strategy Consultant for IP-SAKTI Sahayak. "
                 "The user is asking about the patentability or commercial feasibility of an Ayurvedic / herbal product concept or formulation. "
-                "Respond thoroughly and professionally with the following structure:\n\n"
+                "Do NOT output internal <think> or reasoning tags. Respond thoroughly and professionally with the following structure:\n\n"
                 "**Short answer:**\n"
                 "Provide a direct, concise executive summary (Yes/No with clear caveats on Indian patentability criteria vs export/international market requirements).\n\n"
                 "### 1. Patentability in India\n"
@@ -255,7 +258,7 @@ async def run_4_agent_pipeline(
             except Exception as e:
                 logger.warning("Mode LLM call failed (%s)", e)
 
-        if not clean_resp:
+        if not clean_resp or len(clean_resp) < 25:
             if mode == "CHAT":
                 q_lower = query.lower().strip()
                 import re
